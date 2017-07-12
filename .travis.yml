@@ -10,7 +10,7 @@ install:
     - pip install tox
 
 script:
-    - tox
+    - travis_wait tox
 
 notifications:
   slack: pybel:n2KbWKBum3musnBg3L76gGwq
