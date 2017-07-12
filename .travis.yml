@@ -1,0 +1,13 @@
+sudo: false
+cache: pip
+
+language: python
+
+python:
+    - 3.6
+
+script:
+    - python3 -m bio2bel_chebi arty
+
+notifications:
+  slack: pybel:n2KbWKBum3musnBg3L76gGwq
