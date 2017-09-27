@@ -8,6 +8,7 @@ import logging
 
 import click
 
+from ols_client.api import OLS_BASE
 from .run import deploy_to_arty
 
 
@@ -18,9 +19,10 @@ def main():
 
 
 @main.command()
-def arty():
+@click.option('-b', '--ols-base', help="OLS base url. Defaults to {}".format(OLS_BASE))
+def deploy(ols_base):
     """Deploy to artifactory"""
-    deploy_to_arty()
+    deploy_to_arty(ols_base=ols_base)
 
 
 if __name__ == '__main__':

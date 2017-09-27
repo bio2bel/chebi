@@ -8,9 +8,9 @@ from pybel_tools.resources import deploy_namespace, get_today_arty_namespace
 CHEBI_MODULE_NAME = 'chebi'
 
 
-def deploy_to_arty():
+def deploy_to_arty(ols_base=None):
     """Gets the data and writes BEL namespace file to artifactory"""
-    values = get_labels('chebi')
+    values = get_labels('chebi', ols_base=ols_base)
 
     file_name = get_today_arty_namespace(CHEBI_MODULE_NAME)
 
