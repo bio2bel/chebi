@@ -1,2 +1,2 @@
-ols_client
+click
 pybel_tools

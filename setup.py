@@ -9,8 +9,8 @@ import setuptools
 PACKAGES = setuptools.find_packages(where='src')
 META_PATH = os.path.join('src', 'bio2bel_chebi', '__init__.py')
 INSTALL_REQUIRES = [
+    'click',
     'pybel_tools',
-    'ols_client',
 ]
 ENTRY_POINTS = {
     'console_scripts': [
