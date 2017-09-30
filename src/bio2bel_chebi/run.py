@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from ols_client import get_labels
 from pybel.constants import NAMESPACE_DOMAIN_CHEMICAL
 from pybel_tools.definition_utils import write_namespace
 from pybel_tools.resources import deploy_namespace, get_today_arty_namespace
-
-from ols_client import get_labels
 
 CHEBI_MODULE_NAME = 'chebi'
 
