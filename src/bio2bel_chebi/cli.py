@@ -9,8 +9,9 @@ import sys
 
 import click
 
+from bio2bel_chebi.manager import Manager
+from bio2bel_chebi.run import MODULE_DOMAIN, MODULE_FUNCTIONS, MODULE_NAME
 from pybel_tools.ols_utils import OlsNamespaceOntology
-from .run import MODULE_FUNCTIONS, MODULE_DOMAIN, MODULE_NAME
 
 
 @click.group()
@@ -36,6 +37,13 @@ def deploy(ols_base=None, no_hash_check=False):
     ontology = OlsNamespaceOntology(MODULE_NAME, MODULE_DOMAIN, MODULE_FUNCTIONS, ols_base=ols_base)
     success = ontology.deploy(hash_check=(not no_hash_check))
     click.echo('Deployed to {}'.format(success) if success else 'Duplicate not deployed')
+
+
+@main.command()
+@click.option('-c', '--connection', help="Custom OLS base url")
+def populate(connection):
+    m = Manager(connection=connection)
+    m.populate()
 
 
 if __name__ == '__main__':

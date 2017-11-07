@@ -10,8 +10,15 @@ PACKAGES = setuptools.find_packages(where='src')
 META_PATH = os.path.join('src', 'bio2bel_chebi', '__init__.py')
 INSTALL_REQUIRES = [
     'click',
+    'pandas',
+    'sqlalchemy',
+    'tqdm',
+    'pybel',
     'pybel_tools',
 ]
+EXTRAS_REQUIRE = {
+    'web': ['flask', 'flask-admin'],
+}
 ENTRY_POINTS = {
     'console_scripts': [
         'bio2bel_chebi = bio2bel_chebi.cli:main',
