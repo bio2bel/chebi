@@ -13,8 +13,8 @@ INSTALL_REQUIRES = [
     'pandas',
     'sqlalchemy',
     'tqdm',
-    'pybel',
-    'pybel_tools',
+    'pybel>=0.9.5',
+    'pybel_tools>=0.4.5',
 ]
 EXTRAS_REQUIRE = {
     'web': ['flask', 'flask-admin'],

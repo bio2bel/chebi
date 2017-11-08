@@ -2,5 +2,5 @@ click
 pandas
 sqlalchemy
 tqdm
-pybel
-pybel_tools
+pybel>=0.9.5
+pybel_tools>=0.4.5
