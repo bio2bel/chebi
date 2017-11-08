@@ -4,13 +4,26 @@ cache: pip
 language: python
 
 python:
-    - 3.6
+  - 3.6
+
+env:
+  matrix:
+    - TOXENV=py
+    - TOXENV=rst-lint
+
+before_install:
+  - pip install codecov
 
 install:
-    - pip install tox
+  - pip install tox
 
 script:
-    - travis_wait 30 tox
+ - travis_wait 45 tox
+
+after_success:
+  - tox -e coverage-report
+  - codecov
 
 notifications:
   slack: pybel:n2KbWKBum3musnBg3L76gGwq
+
