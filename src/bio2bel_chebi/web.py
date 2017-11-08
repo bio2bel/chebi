@@ -11,7 +11,7 @@ when pip installing
 """
 
 import flask_admin
-from flask import Flask, render_template
+from flask import Flask
 from flask_admin.contrib.sqla import ModelView
 
 from bio2bel_chebi.manager import Manager
@@ -25,7 +25,6 @@ manager = Manager()
 admin.add_view(ModelView(Chemical, manager.session))
 admin.add_view(ModelView(Synonym, manager.session))
 admin.add_view(ModelView(Accession, manager.session))
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
