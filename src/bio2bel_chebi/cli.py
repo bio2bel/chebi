@@ -46,5 +46,12 @@ def populate(connection):
     m.populate()
 
 
+@main.command()
+def web():
+    """Run the web app"""
+    from .web import app
+    app.run(host='0.0.0.0', port=5000)
+
+
 if __name__ == '__main__':
     main()
