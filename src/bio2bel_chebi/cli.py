@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Run this script with either :code:`python3 -m bio2bel_chebi arty`"""
+"""Run this script with :code:`python3 -m bio2bel_chebi`"""
 
 from __future__ import print_function
 
