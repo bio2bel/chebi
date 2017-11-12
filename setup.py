@@ -20,6 +20,9 @@ EXTRAS_REQUIRE = {
     'web': ['flask', 'flask-admin'],
 }
 ENTRY_POINTS = {
+    'bio2bel': [
+        'chebi = bio2bel_chebi',
+    ],
     'console_scripts': [
         'bio2bel_chebi = bio2bel_chebi.cli:main',
     ]
