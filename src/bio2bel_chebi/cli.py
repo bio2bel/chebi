@@ -42,6 +42,15 @@ def deploy(ols_base=None, no_hash_check=False):
 @main.command()
 @click.option('-c', '--connection', help="Custom OLS base url")
 def populate(connection):
+    """Populates the database"""
+    m = Manager(connection=connection)
+    m.populate()
+
+
+@main.command()
+@click.option('-c', '--connection', help="Custom OLS base url")
+def drop(connection):
+    """Drops the database"""
     m = Manager(connection=connection)
     m.populate()
 
