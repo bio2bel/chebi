@@ -5,9 +5,9 @@
 from __future__ import print_function
 
 import logging
-import sys
 
 import click
+import sys
 
 from bio2bel_chebi.manager import Manager
 from bio2bel_chebi.run import MODULE_DOMAIN, MODULE_FUNCTION, MODULE_NAME
