@@ -32,6 +32,11 @@ class Manager(object):
         log.info('create table in {}'.format(self.engine.url))
         Base.metadata.create_all(self.engine, checkfirst=check_first)
 
+    def drop_all(self, check_first=True):
+        """Create tables"""
+        log.info('dropping table in {}'.format(self.engine.url))
+        Base.metadata.drop_all(self.engine, checkfirst=check_first)
+
     def get_or_create_chemical(self, chebi_id, **kwargs):
         if chebi_id in self.chemicals:
             return self.chemicals[chebi_id]

@@ -5,10 +5,11 @@
 from __future__ import print_function
 
 import logging
-
-import click
 import sys
 
+import click
+
+from bio2bel_chebi.constants import DEFAULT_CACHE_CONNECTION
 from bio2bel_chebi.manager import Manager
 from bio2bel_chebi.run import MODULE_DOMAIN, MODULE_ENCODING, MODULE_NAME
 from pybel_tools.ols_utils import OlsNamespaceOntology
@@ -40,7 +41,7 @@ def deploy(ols_base=None, no_hash_check=False):
 
 
 @main.command()
-@click.option('-c', '--connection', help="Custom OLS base url")
+@click.option('-c', '--connection', help='Defaults to {}'.format(DEFAULT_CACHE_CONNECTION))
 def populate(connection):
     """Populates the database"""
     m = Manager(connection=connection)
@@ -48,11 +49,11 @@ def populate(connection):
 
 
 @main.command()
-@click.option('-c', '--connection', help="Custom OLS base url")
+@click.option('-c', '--connection', help='Defaults to {}'.format(DEFAULT_CACHE_CONNECTION))
 def drop(connection):
     """Drops the database"""
     m = Manager(connection=connection)
-    m.populate()
+    m.drop_all()
 
 
 @main.command()
