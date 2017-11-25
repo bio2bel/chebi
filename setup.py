@@ -13,6 +13,7 @@ INSTALL_REQUIRES = [
     'pandas',
     'sqlalchemy',
     'tqdm',
+    'bio2bel',
     'pybel>=0.9.5',
     'pybel_tools>=0.4.5',
 ]

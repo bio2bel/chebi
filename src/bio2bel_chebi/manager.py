@@ -8,19 +8,20 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
 
-from bio2bel_chebi.constants import DEFAULT_CACHE_CONNECTION
-from bio2bel_chebi.models import Accession, Base, Chemical, Synonym
-from bio2bel_chebi.parser.accession import get_accession_df
-from bio2bel_chebi.parser.compounds import get_compounds_df
-from bio2bel_chebi.parser.inchis import get_inchis_df
-from bio2bel_chebi.parser.names import get_names_df
+from bio2bel.utils import get_connection
+from .constants import MODULE_NAME
+from .models import Accession, Base, Chemical, Synonym
+from .parser.accession import get_accession_df
+from .parser.compounds import get_compounds_df
+from .parser.inchis import get_inchis_df
+from .parser.names import get_names_df
 
 log = logging.getLogger(__name__)
 
 
 class Manager(object):
     def __init__(self, connection=None):
-        self.connection = connection or DEFAULT_CACHE_CONNECTION
+        self.connection = get_connection(MODULE_NAME, connection=connection)
         self.engine = create_engine(self.connection)
         self.session_maker = sessionmaker(bind=self.engine, autoflush=False, expire_on_commit=False)
         self.session = self.session_maker()

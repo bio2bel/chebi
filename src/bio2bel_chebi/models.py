@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Reactome database model"""
+"""ChEBI database model"""
 
 from sqlalchemy import Column, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
