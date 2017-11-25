@@ -24,8 +24,8 @@ def create_application(connection=None, url=None):
     add_admin(app, manager.session, url=url)
 
 
-def add_admin(app, session, url=None):
-    admin = flask_admin.Admin(app, url=(url or '/'))
+def add_admin(app, session, **kwargs):
+    admin = flask_admin.Admin(app, **kwargs)
     admin.add_view(ModelView(Chemical, session))
     admin.add_view(ModelView(Synonym, session))
     admin.add_view(ModelView(Accession, session))
