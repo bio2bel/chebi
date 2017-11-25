@@ -17,14 +17,21 @@ from flask_admin.contrib.sqla import ModelView
 from bio2bel_chebi.manager import Manager
 from bio2bel_chebi.models import *
 
-app = Flask(__name__)
-admin = flask_admin.Admin(app, url='/')
 
-manager = Manager()
+def create_application(connection=None, url=None):
+    app = Flask(__name__)
+    manager = Manager(connection=connection)
+    add_admin(app, manager.session, url=url)
 
-admin.add_view(ModelView(Chemical, manager.session))
-admin.add_view(ModelView(Synonym, manager.session))
-admin.add_view(ModelView(Accession, manager.session))
+
+def add_admin(app, session, url=None):
+    admin = flask_admin.Admin(app, url=(url or '/'))
+    admin.add_view(ModelView(Chemical, session))
+    admin.add_view(ModelView(Synonym, session))
+    admin.add_view(ModelView(Accession, session))
+    return admin
+
 
 if __name__ == '__main__':
+    app = create_application()
     app.run(debug=True, host='0.0.0.0', port=5000)
