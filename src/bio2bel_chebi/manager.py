@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 import logging
 import time
 
@@ -165,16 +164,3 @@ class Manager(object):
         self._populate_accession()
 
         log.info('populated in %.2f seconds', time.time() - t)
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=10)
-    log.setLevel(10)
-
-    from bio2bel_chebi.constants import DEFAULT_CACHE_LOCATION
-    import os
-
-    os.remove(DEFAULT_CACHE_LOCATION)
-
-    m = Manager()
-    m.populate()
