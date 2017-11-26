@@ -25,9 +25,9 @@ class Chemical(Base):
     status = Column(String(8))
 
     parent_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)))
-    #parent = relationship('Chemical', backref=backref('children'), uselist=False)
+    # parent = relationship('Chemical', remote_side=[id], backref=backref('children'), uselist=False)
 
-    name = Column(Text)
+    name = Column(Text, index=True)
     definition = Column(Text)
 
     source = Column(Text)
@@ -36,6 +36,20 @@ class Chemical(Base):
 
     def __str__(self):
         return str(self.chebi_id)
+
+    def to_json(self, include_id=True):
+        rv = {
+            'chebi_id': self.chebi_id,
+            'name': self.name,
+            'definition': self.definition,
+            'source': self.source,
+            'inchi': self.inchi,
+        }
+
+        if include_id:
+            rv['id'] = self.id
+
+        return rv
 
 
 class Synonym(Base):

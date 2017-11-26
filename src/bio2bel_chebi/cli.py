@@ -57,9 +57,11 @@ def drop(connection):
 
 
 @main.command()
-def web():
+@click.option('-c', '--connection', help='Defaults to {}'.format(DEFAULT_CACHE_CONNECTION))
+def web(connection):
     """Run the web app"""
-    from .web import app
+    from .web import create_application
+    app = create_application(connection=connection, url='/')
     app.run(host='0.0.0.0', port=5000)
 
 

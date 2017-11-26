@@ -39,16 +39,37 @@ class Manager(object):
         Base.metadata.drop_all(self.engine, checkfirst=check_first)
 
     def get_or_create_chemical(self, chebi_id, **kwargs):
+        """Gets a chemical from the database by ChEBI
+
+        :param str chebi_id: ChEBI database identifier
+        :rtype: Chemical
+        """
         if chebi_id in self.chemicals:
             return self.chemicals[chebi_id]
 
-        chemical = self.session.query(Chemical).filter(Chemical.chebi_id == chebi_id).one_or_none()
+        chemical = self.get_chemical_by_chebi_id(chebi_id)
 
         if chemical is None:
             chemical = Chemical(chebi_id=chebi_id, **kwargs)
 
         self.chemicals[chebi_id] = chemical
         return chemical
+
+    def get_chemical_by_chebi_id(self, chebi_id):
+        """Get a chemical from the database
+
+        :param str chebi_id: ChEBI database identifier
+        :rtype: Optional[Chemical]
+        """
+        return self.session.query(Chemical).filter(Chemical.chebi_id == chebi_id).one_or_none()
+
+    def get_chemical_by_chebi_name(self, name):
+        """Get a chemical from the database
+
+        :param str name: ChEBI name
+        :rtype: Optional[Chemical]
+        """
+        return self.session.query(Chemical).filter(Chemical.name == name).one_or_none()
 
     def _populate_compounds(self, url=None):
         """Downloads and populates the compounds
