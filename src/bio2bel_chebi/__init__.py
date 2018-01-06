@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from . import models
 from .manager import Manager
 
 __version__ = '0.1.1-dev'

@@ -71,6 +71,9 @@ class Synonym(Base):
     # index on ID/Source
     # index on id/name/source
 
+    def __str__(self):
+        return self.name
+
 
 class Accession(Base):
     __tablename__ = ACCESSION_TABLE_NAME
@@ -83,3 +86,6 @@ class Accession(Base):
     source = Column(String(255))
     type = Column(String(255))
     accession = Column(String(255))
+
+    def __str__(self):
+        return '{}:{}'.format(self.source, self.accession)
