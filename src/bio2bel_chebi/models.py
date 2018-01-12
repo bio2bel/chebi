@@ -5,6 +5,7 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import backref, relationship
+from pybel.dsl import abundance
 
 Base = declarative_base()
 
@@ -25,7 +26,7 @@ class Chemical(Base):
     status = Column(String(8))
 
     parent_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)))
-    # parent = relationship('Chemical', remote_side=[id], backref=backref('children'), uselist=False)
+    parent = relationship('Chemical', remote_side=[id], backref=backref('children'), uselist=False)
 
     name = Column(Text, index=True)
     definition = Column(Text)
@@ -50,6 +51,17 @@ class Chemical(Base):
             rv['id'] = self.id
 
         return rv
+
+    def to_bel(self):
+        """Makes an abundance PyBEL data dictionary
+
+        :rtype: abundance
+        """
+        return abundance(
+            namespace='CHEBI',
+            name=str(self.name),
+            identifier=str(self.chebi_id)
+        )
 
 
 class Synonym(Base):
