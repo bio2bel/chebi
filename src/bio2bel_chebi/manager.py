@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
 
 from bio2bel.utils import get_connection
+from pybel.constants import IDENTIFIER, IS_A, NAME, NAMESPACE
 from .constants import MODULE_NAME
 from .models import Accession, Base, Chemical, Synonym
 from .parser.accession import get_accession_df
@@ -164,3 +165,42 @@ class Manager(object):
         self._populate_accession()
 
         log.info('populated in %.2f seconds', time.time() - t)
+
+    def enrich_chemical_hierarchy(self, graph):
+        """Enriches the parents for all ChEBI chemicals in the graph
+
+        :type graph: pybel.BELGraph
+        """
+        for node, data in graph.nodes_iter(data=True):
+            namespace = data.get(NAMESPACE)
+
+            if namespace not in {'CHEBI', 'CHEBIID'}:
+                continue
+
+            identifier = data.get(IDENTIFIER)
+            name = data.get(NAME)
+
+            if namespace == 'CHEBI':
+                if identifier is not None:
+                    m = self.get_chemical_by_chebi_id(identifier)
+                elif name is not None:
+                    m = self.get_chemical_by_chebi_name(name)
+                else:
+                    raise ValueError
+
+            elif namespace == 'CHEBIID':
+                m = self.get_chemical_by_chebi_id(name)
+
+            else:
+                continue
+
+            parent = m.parent
+
+            if parent is None:
+                continue
+
+            graph.add_unqualified_edge(
+                node,
+                parent.as_bel(),
+                IS_A
+            )
