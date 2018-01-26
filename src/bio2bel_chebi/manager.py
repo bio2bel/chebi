@@ -97,7 +97,9 @@ class Manager(object):
         :param Optional[str] url:
         """
         log.info('Downloading compounds')
+
         df = get_compounds_df(url=url)
+
 
         log.info('Inserting compounds')
 

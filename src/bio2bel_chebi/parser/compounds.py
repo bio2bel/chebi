@@ -13,4 +13,10 @@ def get_compounds_df(url=None):
     :param Optional[str] url: The URL (or file path) to download. Defaults to the ChEBI data.
     :rtype: pandas.DataFrame
     """
-    return pd.read_csv(COMPOUNDS_URL, sep='\t', compression='gzip', na_values=['null'], low_memory=False)
+    return pd.read_csv(
+        url or COMPOUNDS_URL,
+        sep='\t',
+        compression='gzip',
+        na_values=['null'],
+        low_memory=False
+    )
