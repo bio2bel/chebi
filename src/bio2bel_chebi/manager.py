@@ -16,6 +16,8 @@ from .parser.compounds import get_compounds_df
 from .parser.inchis import get_inchis_df
 from .parser.names import get_names_df
 
+__all__ = ['Manager']
+
 log = logging.getLogger(__name__)
 
 
@@ -222,3 +224,6 @@ class Manager(object):
                 parent.as_bel(),
                 IS_A
             )
+
+    def to_bel(self):
+        raise NotImplementedError

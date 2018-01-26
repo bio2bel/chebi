@@ -5,7 +5,15 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import backref, relationship
+
 from pybel.dsl import abundance
+
+__all__ = [
+    'Base',
+    'Chemical',
+    'Synonym',
+    'Accession',
+]
 
 Base = declarative_base()
 
