@@ -3,12 +3,12 @@
 import logging
 import time
 
+from bio2bel.utils import get_connection
+from pybel.constants import IDENTIFIER, IS_A, NAME, NAMESPACE
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
 
-from bio2bel.utils import get_connection
-from pybel.constants import IDENTIFIER, IS_A, NAME, NAMESPACE
 from .constants import MODULE_NAME
 from .models import Accession, Base, Chemical, Synonym
 from .parser.accession import get_accession_df
@@ -29,6 +29,17 @@ class Manager(object):
         self.session = self.session_maker()
         self.create_all()
         self.chemicals = {}
+
+    @staticmethod
+    def ensure(connection=None):
+        """
+        :param connection: A connection string, a manager, or none to use the default manager
+        :type connection: Optional[str or Manager]
+        :rtype: Manager
+        """
+        if connection is None or isinstance(connection, str):
+            return Manager(connection=connection)
+        return connection
 
     def create_all(self, check_first=True):
         """Create tables"""
@@ -99,7 +110,6 @@ class Manager(object):
         log.info('Downloading compounds')
 
         df = get_compounds_df(url=url)
-
 
         log.info('Inserting compounds')
 
