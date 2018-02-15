@@ -15,9 +15,8 @@ from bio2bel_chebi.run import MODULE_DOMAIN, MODULE_ENCODING, MODULE_NAME
 from pybel_tools.ols_utils import OlsNamespaceOntology
 
 
-@click.group()
+@click.group(help='Convert ChEBI to BEL. Default connection at {}'.format(DEFAULT_CACHE_CONNECTION))
 def main():
-    """ChEBI to BEL"""
     logging.basicConfig(level=10, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
