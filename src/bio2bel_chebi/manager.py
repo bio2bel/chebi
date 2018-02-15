@@ -85,21 +85,23 @@ class Manager(object):
         return self.session.query(Chemical).filter(Chemical.name == name).one_or_none()
 
     def build_chebi_id_name_mapping(self):
-        """Builds a mapping from CHEBI identifier to CHEBI name
+        """Builds a mapping from ChEBI identifier to ChEBI name
+
         :rtype: dict[str,str]
         """
         return {
             str(identifier): name
-            for identifier, name in self.session.query(Chemical.id, Chemical.name).all()
+            for identifier, name in self.session.query(Chemical.chebi_id, Chemical.name).all()
         }
 
     def build_chebi_name_id_mapping(self):
-        """Builds a mapping from CHEBI name to CHEBI identifier
+        """Builds a mapping from ChEBI name to ChEBI identifier
+
         :rtype: dict[str,str]
         """
         return {
             name: str(identifier)
-            for name, identifier in self.session.query(Chemical.name, Chemical.id).all()
+            for name, identifier in self.session.query(Chemical.name, Chemical.chebi_id).all()
         }
 
     def _populate_compounds(self, url=None):
