@@ -29,22 +29,25 @@ class Chemical(Base):
 
     id = Column(Integer, primary_key=True)
 
-    chebi_id = Column(Integer, nullable=False, unique=True, index=True)
+    chebi_id = Column(Integer, nullable=False, unique=True, index=True, doc='The ChEBI identifier for a compound')
 
     status = Column(String(8))
 
-    parent_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)))
+    parent_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), doc='The parent chemical')
     parent = relationship('Chemical', remote_side=[id], backref=backref('children'), uselist=False)
 
-    name = Column(String(4095), index=True)
-    definition = Column(Text)
+    name = Column(String(3071), index=True, doc='The name of the compound')
+    definition = Column(Text, doc='A description of the compound')
 
-    source = Column(Text)
+    source = Column(Text, doc='The database source')
 
-    inchi = Column(Text)
+    inchi = Column(Text, doc='The InChI string for this compound')
+
+    def __repr__(self):
+        return '<Chemical CHEBI:{}>'.format(self.chebi_id)
 
     def __str__(self):
-        return str(self.chebi_id)
+        return str(self.name)
 
     def to_json(self, include_id=True):
         rv = {
