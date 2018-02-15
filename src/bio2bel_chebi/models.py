@@ -36,7 +36,7 @@ class Chemical(Base):
     parent_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)))
     parent = relationship('Chemical', remote_side=[id], backref=backref('children'), uselist=False)
 
-    name = Column(Text, index=True)
+    name = Column(String(4095), index=True)
     definition = Column(Text)
 
     source = Column(Text)
