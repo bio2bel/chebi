@@ -49,7 +49,11 @@ class Chemical(Base):
     def __str__(self):
         return str(self.name)
 
-    def to_json(self, include_id=True):
+    def to_json(self, include_id=False):
+        """
+        :param bool include_id: Include the database identifier?
+        :rtype: dict
+        """
         rv = {
             'chebi_id': self.chebi_id,
             'name': self.name,
@@ -90,7 +94,6 @@ class Synonym(Base):
     adapted = Column(Text)
     language = Column(String(8))
 
-
     # index on ID/Source
     # index on id/name/source
 
@@ -99,6 +102,7 @@ class Synonym(Base):
 
 
 class Accession(Base):
+    """Represents related accession numbers of a chemical"""
     __tablename__ = ACCESSION_TABLE_NAME
 
     id = Column(Integer, primary_key=True)

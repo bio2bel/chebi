@@ -20,7 +20,7 @@ from bio2bel_chebi.models import *
 
 def create_application(connection=None, url=None):
     app = Flask(__name__)
-    manager = Manager(connection=connection)
+    manager = Manager.ensure(connection=connection)
     add_admin(app, manager.session, url=url)
     return app
 

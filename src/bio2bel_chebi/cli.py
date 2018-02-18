@@ -4,10 +4,9 @@
 
 from __future__ import print_function
 
+import click
 import logging
 import sys
-
-import click
 
 from bio2bel_chebi.constants import DEFAULT_CACHE_CONNECTION
 from bio2bel_chebi.manager import Manager
@@ -15,9 +14,13 @@ from bio2bel_chebi.run import MODULE_DOMAIN, MODULE_ENCODING, MODULE_NAME
 from pybel_tools.ols_utils import OlsNamespaceOntology
 
 
-@click.group(help='Convert ChEBI to BEL. Default connection at {}'.format(DEFAULT_CACHE_CONNECTION))
-def main():
+@click.group()
+@click.option('-c', '--connection', help='Defaults to {}'.format(DEFAULT_CACHE_CONNECTION))
+@click.pass_context
+def main(ctx):
+    """Convert ChEBI to BEL"""
     logging.basicConfig(level=10, format="%(asctime)s - %(levelname)s - %(message)s")
+    ctx.obj = Manager(connection=connection)
 
 
 @main.command()
@@ -40,30 +43,31 @@ def deploy(ols_base=None, no_hash_check=False):
 
 
 @main.command()
-@click.option('-c', '--connection', help='Defaults to {}'.format(DEFAULT_CACHE_CONNECTION))
-def populate(connection):
+@click.pass_obj
+def populate(manager):
     """Populates the database"""
-    m = Manager(connection=connection)
-    m.populate()
+    manager.populate()
 
 
 @main.command()
-@click.option('-c', '--connection', help='Defaults to {}'.format(DEFAULT_CACHE_CONNECTION))
 @click.option('-y', '--yes', is_flag=True)
-def drop(connection, yes):
+@click.pass_obj
+def drop(manager, yes):
     """Drops database"""
     if yes or click.confirm('Drop everything?'):
-        m = Manager(connection=connection)
-        m.drop_all()
+        manager.drop_all()
 
 
 @main.command()
-@click.option('-c', '--connection', help='Defaults to {}'.format(DEFAULT_CACHE_CONNECTION))
-def web(connection):
+@click.option('-v', '--debug', is_flag=True)
+@click.option('-h', '--host')
+@click.option('-p', '--port', type=int)
+@click.pass_obj
+def web(manager, debug, host, port):
     """Run the web app"""
     from .web import create_application
-    app = create_application(connection=connection, url='/')
-    app.run(host='0.0.0.0', port=5000)
+    app = create_application(connection=manager, url='/')
+    app.run(debug=debug, host=host, port=port)
 
 
 if __name__ == '__main__':
