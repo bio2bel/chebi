@@ -17,7 +17,7 @@ from pybel_tools.ols_utils import OlsNamespaceOntology
 @click.group()
 @click.option('-c', '--connection', help='Defaults to {}'.format(DEFAULT_CACHE_CONNECTION))
 @click.pass_context
-def main(ctx):
+def main(ctx, connection):
     """Convert ChEBI to BEL"""
     logging.basicConfig(level=10, format="%(asctime)s - %(levelname)s - %(message)s")
     ctx.obj = Manager(connection=connection)
