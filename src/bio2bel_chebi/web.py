@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
-""" This module contains the flask application to visualize the db
-
-when pip installing
+"""This module builds a :mod:`Flask` application for interacting with the underlying database. When installing,
+use the web extra like:
 
 .. source-code:: sh
 
     pip install bio2bel_chebi[web]
-
 """
 
 import flask_admin
@@ -18,21 +16,36 @@ from bio2bel_chebi.manager import Manager
 from bio2bel_chebi.models import *
 
 
-def create_application(connection=None, url=None):
+def add_admin(app, session, **kwargs):
+    """Adds a Flask Admin interface to an application
+
+    :param flask.Flask app:
+    :param session:
+    :param kwargs:
+    :rtype: flask_admin.Admin
+    """
+    admin = flask_admin.Admin(app, **kwargs)
+
+    admin.add_view(ModelView(Chemical, session))
+    admin.add_view(ModelView(Synonym, session))
+    admin.add_view(ModelView(Accession, session))
+
+    return admin
+
+
+def get_app(connection=None, url=None):
+    """Creates a Flask application
+
+    :type connection: Optional[str or bio2bel_chebi.Manager]
+    :type url: Optional[str]
+    :rtype: flask.Flask
+    """
     app = Flask(__name__)
     manager = Manager.ensure(connection=connection)
     add_admin(app, manager.session, url=url)
     return app
 
 
-def add_admin(app, session, **kwargs):
-    admin = flask_admin.Admin(app, **kwargs)
-    admin.add_view(ModelView(Chemical, session))
-    admin.add_view(ModelView(Synonym, session))
-    admin.add_view(ModelView(Accession, session))
-    return admin
-
-
 if __name__ == '__main__':
-    app = create_application()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app_ = get_app()
+    app_.run(debug=True, host='0.0.0.0', port=5000)

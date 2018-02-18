@@ -65,8 +65,8 @@ def drop(manager, yes):
 @click.pass_obj
 def web(manager, debug, host, port):
     """Run the web app"""
-    from .web import create_application
-    app = create_application(connection=manager, url='/')
+    from .web import get_app
+    app = get_app(connection=manager, url='/')
     app.run(debug=debug, host=host, port=port)
 
 
