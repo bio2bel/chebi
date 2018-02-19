@@ -36,7 +36,7 @@ class Chemical(Base):
     parent_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), doc='The parent chemical')
     parent = relationship('Chemical', remote_side=[id], backref=backref('children'), uselist=False)
 
-    name = Column(String(3070), index=True, doc='The name of the compound')
+    name = Column(String(2000), index=True, doc='The name of the compound')
     definition = Column(Text, doc='A description of the compound')
     source = Column(Text, doc='The database source')
     status = Column(String(8))
