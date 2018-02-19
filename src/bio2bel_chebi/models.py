@@ -31,7 +31,7 @@ class Chemical(Base):
 
     id = Column(Integer, primary_key=True)
 
-    chebi_id = Column(Integer, nullable=False, unique=True, index=True, doc='The ChEBI identifier for a compound')
+    chebi_id = Column(String(32), nullable=False, unique=True, index=True, doc='The ChEBI identifier for a compound')
 
     parent_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), doc='The parent chemical')
     parent = relationship('Chemical', remote_side=[id], backref=backref('children'), uselist=False)
