@@ -75,6 +75,14 @@ class Manager(object):
         """
         return self.session.query(Synonym).count()
 
+    def summarize(self):
+        """Returns a summary dictionary over the content of the database
+
+        :rtype: dict[str,int]
+        """
+        return dict(chemicals=self.count_chemicals(), xrefs=self.count_xrefs(), synonyms=self.count_synonyms())
+
+
     def get_or_create_chemical(self, chebi_id, **kwargs):
         """Gets a chemical from the database by ChEBI
 
