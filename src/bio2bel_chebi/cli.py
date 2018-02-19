@@ -59,6 +59,15 @@ def drop(manager, yes):
 
 
 @main.command()
+@click.pass_obj
+def summarize(manager):
+    """Summarizes the database"""
+    click.echo('Chemicals: {}'.format(manager.count_chemicals()))
+    click.echo('Synonyms: {}'.format(manager.count_synonyms()))
+    click.echo('Cross-references: {}'.format(manager.count_xrefs()))
+
+
+@main.command()
 @click.option('-v', '--debug', is_flag=True)
 @click.option('-h', '--host')
 @click.option('-p', '--port', type=int)

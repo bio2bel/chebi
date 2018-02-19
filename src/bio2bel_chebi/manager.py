@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import pandas as pd
 import time
 
-import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
@@ -29,7 +29,7 @@ class Manager(object):
         self.session_maker = sessionmaker(bind=self.engine, autoflush=False, expire_on_commit=False)
         self.session = self.session_maker()
         self.create_all()
-        
+
         self.id_chemical = {}
         self.id_inchi = {}
 
@@ -53,6 +53,27 @@ class Manager(object):
         """Create tables"""
         log.info('dropping tables in {}'.format(self.engine.url))
         Base.metadata.drop_all(self.engine, checkfirst=check_first)
+
+    def count_chemicals(self):
+        """Counts the number of chemicals stored
+
+        :rtype: int
+        """
+        return self.session.query(Chemical).count()
+
+    def count_xrefs(self):
+        """Counts the number of cross-references stored
+
+        :rtype: int
+        """
+        return self.session.query(Accession).count()
+
+    def count_synonyms(self):
+        """Counts the number of synonyms stored
+
+        :rtype: int
+        """
+        return self.session.query(Synonym).count()
 
     def get_or_create_chemical(self, chebi_id, **kwargs):
         """Gets a chemical from the database by ChEBI
@@ -94,20 +115,14 @@ class Manager(object):
 
         :rtype: dict[str,str]
         """
-        return {
-            str(identifier): name
-            for identifier, name in self.session.query(Chemical.chebi_id, Chemical.name).all()
-        }
+        return dict(self.session.query(Chemical.chebi_id, Chemical.name).all())
 
     def build_chebi_name_id_mapping(self):
         """Builds a mapping from ChEBI name to ChEBI identifier
 
         :rtype: dict[str,str]
         """
-        return {
-            name: str(identifier)
-            for name, identifier in self.session.query(Chemical.name, Chemical.chebi_id).all()
-        }
+        return dict(self.session.query(Chemical.name, Chemical.chebi_id).all())
 
     def _populate_inchis(self, url=None):
         """Downloads and inserts the InChI strings
@@ -194,6 +209,7 @@ class Manager(object):
         :param Optional[str] url: The URL (or file path) to download. Defaults to the ChEBI data.
         """
         df = get_accession_df(url=url)
+        df = df.where((pd.notnull(df)), None)
 
         log.info('preparing Accessions')
 
@@ -217,12 +233,34 @@ class Manager(object):
         """Populates all tables"""
         t = time.time()
 
-        #self._populate_inchis()
-        #self._populate_compounds()
+        self._populate_inchis()
+        self._populate_compounds()
         self._populate_names()
-        #self._populate_accession()
+        self._populate_accession()
 
         log.info('populated in %.2f seconds', time.time() - t)
+
+    def get_chemical_from_data(self, data):
+        namespace = data.get(NAMESPACE)
+
+        if namespace not in {'CHEBI', 'CHEBIID'}:
+            return
+
+        identifier = data.get(IDENTIFIER)
+        name = data.get(NAME)
+
+        if namespace == 'CHEBI':
+            if identifier is not None:
+                return self.get_chemical_by_chebi_id(identifier)
+
+            if name is not None:
+                return self.get_chemical_by_chebi_name(name)
+
+            else:
+                raise ValueError
+
+        elif namespace == 'CHEBIID':
+            return self.get_chemical_by_chebi_id(name)
 
     def enrich_chemical_hierarchy(self, graph):
         """Enriches the parents for all ChEBI chemicals in the graph
@@ -230,26 +268,9 @@ class Manager(object):
         :type graph: pybel.BELGraph
         """
         for node, data in graph.nodes_iter(data=True):
-            namespace = data.get(NAMESPACE)
+            m = self.get_chemical_from_data(data)
 
-            if namespace not in {'CHEBI', 'CHEBIID'}:
-                continue
-
-            identifier = data.get(IDENTIFIER)
-            name = data.get(NAME)
-
-            if namespace == 'CHEBI':
-                if identifier is not None:
-                    m = self.get_chemical_by_chebi_id(identifier)
-                elif name is not None:
-                    m = self.get_chemical_by_chebi_name(name)
-                else:
-                    raise ValueError
-
-            elif namespace == 'CHEBIID':
-                m = self.get_chemical_by_chebi_id(name)
-
-            else:
+            if m is None:
                 continue
 
             parent = m.parent
