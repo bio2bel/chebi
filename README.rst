@@ -15,5 +15,5 @@ Installation
     :alt: Coverage Status
 
 .. |docs| image:: http://readthedocs.org/projects/bio2bel-chebi/badge/?version=latest
-    :target: http://bio2bel.readthedocs.io/projects/ExPASy/en/latest/?badge=latest
+    :target: http://bio2bel.readthedocs.io/projects/chebi/en/latest/?badge=latest
     :alt: Documentation Status
