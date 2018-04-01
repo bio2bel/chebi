@@ -2,10 +2,11 @@
 
 """ChEBI database model"""
 
-from sqlalchemy import Column, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, Date, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import backref, relationship
 
+from pybel.constants import PART_OF
 from pybel.dsl import abundance
 
 __all__ = [
@@ -21,9 +22,8 @@ TABLE_PREFIX = 'chebi'
 CHEMICAL_TABLE_NAME = '{}_chemical'.format(TABLE_PREFIX)
 SYNONYM_TABLE_NAME = '{}_synonym'.format(TABLE_PREFIX)
 ACCESSION_TABLE_NAME = '{}_accession'.format(TABLE_PREFIX)
+RELATION_TABLE_NAME = '{}_relation'.format(TABLE_PREFIX)
 
-
-# FIXME need chemical multi-hierarchy?
 
 class Chemical(Base):
     """Represents a chemical"""
@@ -33,14 +33,17 @@ class Chemical(Base):
 
     chebi_id = Column(String(32), nullable=False, unique=True, index=True, doc='The ChEBI identifier for a compound')
 
-    parent_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), doc='The parent chemical')
-    parent = relationship('Chemical', remote_side=[id], backref=backref('children'), uselist=False)
+    parent_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), nullable=True)
+    children = relationship('Chemical', backref=backref('parent', remote_side=[id]))
 
-    name = Column(String(2000), index=True, doc='The name of the compound')
+    name = Column(String(2000), doc='The name of the compound')
     definition = Column(Text, doc='A description of the compound')
     source = Column(Text, doc='The database source')
     status = Column(String(8))
     inchi = Column(Text, doc='The InChI string for this compound')
+    modified_on = Column(Date)
+    created_by = Column(String(255))
+    stars = Column(Integer)
 
     def __repr__(self):
         return '<Chemical CHEBI:{}>'.format(self.chebi_id)
@@ -78,13 +81,45 @@ class Chemical(Base):
         )
 
 
+class Relation(Base):
+    """Represents a relation between two chemicals"""
+    __tablename__ = RELATION_TABLE_NAME
+
+    id = Column(Integer, primary_key=True)
+
+    type = Column(String(32), nullable=False, index=True)
+    status = Column(String(1), nullable=False, index=True)
+
+    source_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), nullable=False)
+    source = relationship('Chemical', foreign_keys=[source_id], backref=backref('out_edges', lazy='dynamic'))
+
+    target_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), nullable=False)
+    target = relationship('Chemical', foreign_keys=[target_id], backref=backref('in_edges', lazy='dynamic'))
+
+    def add_to_graph(self, graph):
+        """Add this relation to the graph
+
+        :param pybel.BELGraph graph:
+        :rtype: Optional[str]
+        """
+        if self.type == 'has_part':
+            return graph.add_unqualified_edge(self.target.to_bel(), self.source.to_bel(), PART_OF)
+
+        if self.type == 'is_a':
+            return graph.add_is_a(self.target.to_bel(), self.source.to_bel())
+
+
+Index('relation_source_type_idx', Relation.source_id, Relation.type)
+Index('relation_target_type_idx', Relation.target_id, Relation.type)
+
+
 class Synonym(Base):
     """Represents synonyms of a chemical"""
     __tablename__ = SYNONYM_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
 
-    chemical_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)))
+    chemical_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), nullable=False)
     chemical = relationship('Chemical', backref=backref('synonyms'))
 
     type = Column(String(16), doc='One of: NAME, SYNONYM, IUPAC NAME, INN, BRAND NAME')
@@ -106,7 +141,7 @@ class Accession(Base):
 
     id = Column(Integer, primary_key=True)
 
-    chemical_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)))
+    chemical_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), nullable=False)
     chemical = relationship('Chemical', backref=backref('accessions'))
 
     source = Column(String(255))

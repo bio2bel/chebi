@@ -14,8 +14,8 @@ INSTALL_REQUIRES = [
     'sqlalchemy',
     'tqdm',
     'bio2bel',
-    'pybel>=0.9.5',
-    'pybel_tools>=0.4.5',
+    'pybel[deployment]>=0.11.1',
+    'pybel_tools>=0.5.1',
 ]
 EXTRAS_REQUIRE = {
     'web': ['flask', 'flask-admin'],

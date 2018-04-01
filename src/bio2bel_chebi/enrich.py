@@ -21,7 +21,7 @@ def enrich_chemical_hierarchy(graph, manager=None):
     :type manager: Optional[bio2bel_chebi.Manager]
     """
     manager = manager or Manager()
-    manager.enrich_chemical_hierarchy(graph)
+    return manager.enrich_chemical_hierarchy(graph)
 
 
 def to_bel(manager=None):

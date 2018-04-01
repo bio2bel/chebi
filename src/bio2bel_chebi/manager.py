@@ -1,58 +1,44 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import pandas as pd
 import time
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+import pandas as pd
 from tqdm import tqdm
 
-from bio2bel.utils import get_connection
+import pybel
+from bio2bel.abstractmanager import AbstractManager
+from bio2bel.utils import bio2bel_populater
 from pybel.constants import IDENTIFIER, NAME, NAMESPACE
 from .constants import MODULE_NAME
-from .models import Accession, Base, Chemical, Synonym
+from .models import Accession, Base, Chemical, Synonym, Relation
 from .parser.accession import get_accession_df
 from .parser.compounds import get_compounds_df
 from .parser.inchis import get_inchis_df
 from .parser.names import get_names_df
+from .parser.relation import get_relations_df
 
 __all__ = ['Manager']
 
 log = logging.getLogger(__name__)
 
 
-class Manager(object):
+class Manager(AbstractManager):
+    """Bio2BEL ChEBI Manager"""
+
+    module_name = MODULE_NAME
+    flask_admin_models = [Chemical, Relation, Synonym, Accession]
+
     def __init__(self, connection=None):
-        self.connection = get_connection(MODULE_NAME, connection=connection)
-        self.engine = create_engine(self.connection)
-        self.session_maker = sessionmaker(bind=self.engine, autoflush=False, expire_on_commit=False)
-        self.session = self.session_maker()
-        self.create_all()
+        super().__init__(connection=connection)
 
-        self.id_chemical = {}
-        self.id_inchi = {}
 
-    @staticmethod
-    def ensure(connection=None):
-        """
-        :param connection: A connection string, a manager, or none to use the default manager
-        :type connection: Optional[str or Manager]
-        :rtype: Manager
-        """
-        if connection is None or isinstance(connection, str):
-            return Manager(connection=connection)
-        return connection
+        self.chebi_id_to_chemical = {}
+        self.chebi_id_to_inchi = {}
 
-    def create_all(self, check_first=True):
-        """Create tables"""
-        log.info('create tables in {}'.format(self.engine.url))
-        Base.metadata.create_all(self.engine, checkfirst=check_first)
-
-    def drop_all(self, check_first=True):
-        """Create tables"""
-        log.info('dropping tables in {}'.format(self.engine.url))
-        Base.metadata.drop_all(self.engine, checkfirst=check_first)
+    @property
+    def base(self):
+        return Base
 
     def count_chemicals(self):
         """Counts the number of chemicals stored
@@ -80,8 +66,11 @@ class Manager(object):
 
         :rtype: dict[str,int]
         """
-        return dict(chemicals=self.count_chemicals(), xrefs=self.count_xrefs(), synonyms=self.count_synonyms())
-
+        return dict(
+            chemicals=self.count_chemicals(),
+            xrefs=self.count_xrefs(),
+            synonyms=self.count_synonyms()
+        )
 
     def get_or_create_chemical(self, chebi_id, **kwargs):
         """Gets a chemical from the database by ChEBI
@@ -89,7 +78,7 @@ class Manager(object):
         :param str chebi_id: ChEBI database identifier
         :rtype: Chemical
         """
-        chemical = self.id_chemical.get(chebi_id)
+        chemical = self.chebi_id_to_chemical.get(chebi_id)
 
         if chemical is not None:
             return chemical
@@ -99,7 +88,7 @@ class Manager(object):
         if chemical is None:
             chemical = Chemical(chebi_id=chebi_id, **kwargs)
 
-        self.id_chemical[chebi_id] = chemical
+        self.chebi_id_to_chemical[chebi_id] = chemical
         return chemical
 
     def get_chemical_by_chebi_id(self, chebi_id):
@@ -108,7 +97,10 @@ class Manager(object):
         :param str chebi_id: ChEBI database identifier
         :rtype: Optional[Chemical]
         """
-        return self.session.query(Chemical).filter(Chemical.chebi_id == chebi_id).one_or_none()
+        chemical = self.session.query(Chemical).filter(Chemical.chebi_id == chebi_id).one_or_none()
+        if chemical.parent:
+            return chemical.parent
+        return chemical
 
     def get_chemical_by_chebi_name(self, name):
         """Get a chemical from the database
@@ -123,6 +115,7 @@ class Manager(object):
 
         :rtype: dict[str,str]
         """
+        # FIXME handle secondary id to correct name mappings, since the name isn't stored with the secondary id entry
         return dict(self.session.query(Chemical.chebi_id, Chemical.name).all())
 
     def build_chebi_name_id_mapping(self):
@@ -132,7 +125,7 @@ class Manager(object):
         """
         return dict(self.session.query(Chemical.name, Chemical.chebi_id).all())
 
-    def _populate_inchis(self, url=None):
+    def _load_inchis(self, url=None):
         """Downloads and inserts the InChI strings
 
         :param Optional[str] url: The URL (or file path) to download. Defaults to the ChEBI data.
@@ -140,7 +133,7 @@ class Manager(object):
         df = get_inchis_df(url=url)
 
         for _, (chebi_id, inchi) in tqdm(df.iterrows(), desc='InChIs', total=len(df.index)):
-            self.id_inchi[str(chebi_id)] = inchi
+            self.chebi_id_to_inchi[str(chebi_id)] = inchi
 
     def _populate_compounds(self, url=None):
         """Downloads and populates the compounds
@@ -153,30 +146,31 @@ class Manager(object):
         log.info('preparing Compounds')
 
         parents = []
-        for _, (_, status, chebi_id, source, parent_id, name, definition, _, _, _) in tqdm(df.iterrows(),
-                                                                                           desc='Compounds',
-                                                                                           total=len(df.index)):
+        it = tqdm(df.iterrows(), desc='Compounds', total=len(df.index))
+        for _, (pk, status, chebi_id, source, parent_chebi_id, name, definition, _, _, _) in it:
             chebi_id = chebi_id.split(':')[1]
 
-            chemical = self.id_chemical[chebi_id] = Chemical(
+            chemical = self.chebi_id_to_chemical[chebi_id] = Chemical(
+                id=pk,  # ChEBI already sends out their data in relational format
                 status=status,
                 chebi_id=chebi_id,
+                parent_chebi_id=parent_chebi_id or None,
                 name=name,
                 source=source,
                 definition=definition,
-                inchi=self.id_inchi.get(chebi_id)
+                inchi=self.chebi_id_to_inchi.get(chebi_id)
             )
             self.session.add(chemical)
 
-            if parent_id:
-                parents.append((chebi_id, parent_id))
+            if parent_chebi_id:
+                parents.append((chebi_id, parent_chebi_id))
 
-        for child_id, parent_id in tqdm(parents, desc='Hierarchy'):
-            child = self.id_chemical.get(child_id)
-            parent = self.id_chemical.get(parent_id)
+        for child_id, parent_chebi_id in tqdm(parents, desc='Secondaries'):
+            child = self.chebi_id_to_chemical.get(child_id)
+            parent = self.chebi_id_to_chemical.get(parent_chebi_id)
 
-            if child and parent:
-                child.parent_id = parent.id
+            if child is not None and parent is not None:
+                child.parent = parent
 
         log.info('committing Compounds')
         self.session.commit()
@@ -194,12 +188,13 @@ class Manager(object):
             chebi_id = str(int(chebi_id))
             chemical = self.get_or_create_chemical(chebi_id=chebi_id)
 
-            for _, (_, chebi_id, type_, source, name, adapted, language) in sub_df.iterrows():
+            for _, (pk, chebi_id, type_, source, name, adapted, language) in sub_df.iterrows():
 
                 if isinstance(name, float) or not name:
                     continue
 
                 synonym = Synonym(
+                    id=pk,
                     chemical=chemical,
                     type=type_,
                     source=source,
@@ -222,11 +217,12 @@ class Manager(object):
         log.info('preparing Accessions')
 
         grouped_df = df.groupby('COMPOUND_ID')
-        for chebi_id, sub_df in tqdm(grouped_df, desc='Synonyms', total=len(grouped_df)):
+        for chebi_id, sub_df in tqdm(grouped_df, desc='Xrefs', total=len(grouped_df)):
             chebi_id = str(int(chebi_id))
             chemical = self.get_or_create_chemical(chebi_id=chebi_id)
-            for _, (_, chebi_id, source, type_, accession) in sub_df.iterrows():
+            for _, (pk, chebi_id, source, type_, accession) in sub_df.iterrows():
                 acc = Accession(
+                    id=pk,
                     chemical=chemical,
                     source=source,
                     type=type_,
@@ -237,18 +233,45 @@ class Manager(object):
         log.info('committing Accessions')
         self.session.commit()
 
+    def _populate_relations(self, url=None):
+        """
+
+        :param Optional[str] url:
+        """
+        df = get_relations_df(url=url)
+
+        for _, (pk, relation_type, source_id, target_id, status)  in tqdm(df.iterrows(), total=len(df.index)):
+            relation = Relation(
+                id=pk,
+                type=relation_type,
+                source_id=source_id,
+                target_id=target_id,
+                status=status,
+            )
+            self.session.add(relation)
+
+        log.info('committing Relations')
+        self.session.commit()
+
+    @bio2bel_populater(MODULE_NAME)
     def populate(self):
         """Populates all tables"""
         t = time.time()
 
-        self._populate_inchis()
+        self._load_inchis()
         self._populate_compounds()
-        self._populate_names()
-        self._populate_accession()
+        self._populate_relations()
+        # self._populate_names()
+        # self._populate_accession()
 
         log.info('populated in %.2f seconds', time.time() - t)
 
     def get_chemical_from_data(self, data):
+        """
+
+        :param dict data:
+        :rtype: Optional[Chemical]
+        """
         namespace = data.get(NAMESPACE)
 
         if namespace not in {'CHEBI', 'CHEBIID'}:
@@ -275,15 +298,13 @@ class Manager(object):
 
         :type graph: pybel.BELGraph
         """
-        for node, data in graph.nodes_iter(data=True):
-            m = self.get_chemical_from_data(data)
+        for _, data in graph.nodes(data=True):
+            chemical = self.get_chemical_from_data(data)
 
-            if m is None:
+            if chemical is None:
                 continue
 
-            parent = m.parent
-
-            if parent is None:
-                continue
-
-            graph.add_is_a(node, parent.as_bel())
+            parent = chemical.parent
+            while parent is not None:
+                graph.add_is_a(chemical.as_bel(), parent.as_bel())
+                chemical, parent = parent, parent.parent
