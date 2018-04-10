@@ -6,7 +6,7 @@ from sqlalchemy import Column, Date, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import backref, relationship
 
-from pybel.constants import PART_OF
+from pybel.constants import NAME, PART_OF
 from pybel.dsl import abundance
 
 __all__ = [
@@ -49,7 +49,15 @@ class Chemical(Base):
         return '<Chemical CHEBI:{}>'.format(self.chebi_id)
 
     def __str__(self):
-        return str(self.name)
+        return self.safe_name or self.chebi_id
+
+    @property
+    def safe_name(self):
+        """Either returns this molecule's name, or the parent name
+
+        :rtype: str
+        """
+        return self.name or self.parent.name
 
     def to_json(self, include_id=False):
         """
@@ -74,10 +82,13 @@ class Chemical(Base):
 
         :rtype: abundance
         """
+        if self.parent:
+            return self.parent.to_bel()
+
         return abundance(
             namespace='CHEBI',
-            name=str(self.name),
-            identifier=str(self.chebi_id)
+            name=self.name,
+            identifier=self.chebi_id
         )
 
 
@@ -102,11 +113,17 @@ class Relation(Base):
         :param pybel.BELGraph graph:
         :rtype: Optional[str]
         """
+        source = self.source.to_bel()
+        target = self.target.to_bel()
+
+        if NAME not in source or NAME not in target:
+            return
+
         if self.type == 'has_part':
-            return graph.add_unqualified_edge(self.target.to_bel(), self.source.to_bel(), PART_OF)
+            return graph.add_unqualified_edge(target, source, PART_OF)
 
         if self.type == 'is_a':
-            return graph.add_is_a(self.target.to_bel(), self.source.to_bel())
+            return graph.add_is_a(target, source)
 
 
 Index('relation_source_type_idx', Relation.source_id, Relation.type)

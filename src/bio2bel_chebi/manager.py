@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
 
+import datetime
 import logging
-import time
 
 import pandas as pd
+import time
+from sqlalchemy import and_
 from tqdm import tqdm
 
 import pybel
 from bio2bel.abstractmanager import AbstractManager
 from bio2bel.utils import bio2bel_populater
+from pybel import BELGraph
 from pybel.constants import IDENTIFIER, NAME, NAMESPACE
+from pybel.manager.models import Namespace, NamespaceEntry
 from .constants import MODULE_NAME
-from .models import Accession, Base, Chemical, Synonym, Relation
+from .models import Accession, Base, Chemical, Relation, Synonym
 from .parser.accession import get_accession_df
 from .parser.compounds import get_compounds_df
 from .parser.inchis import get_inchis_df
@@ -21,6 +25,13 @@ from .parser.relation import get_relations_df
 __all__ = ['Manager']
 
 log = logging.getLogger(__name__)
+
+_chebi_keyword = '_{}'.format(MODULE_NAME.upper())
+_chebi_bel_name = 'ChEBI Ontology'
+_chebi_bel_version = datetime.datetime.utcnow().strftime('%Y%m%d%H%M')
+_chebi_description = 'Relations between chemicals of biological interest'
+
+_namespace_filter = and_(Namespace.keyword == _chebi_keyword, Namespace.url == _chebi_keyword)
 
 
 class Manager(AbstractManager):
@@ -32,7 +43,7 @@ class Manager(AbstractManager):
     def __init__(self, connection=None):
         super().__init__(connection=connection)
 
-
+        self.id_chemical = {}
         self.chebi_id_to_chemical = {}
         self.chebi_id_to_inchi = {}
 
@@ -61,6 +72,12 @@ class Manager(AbstractManager):
         """
         return self.session.query(Synonym).count()
 
+    def count_relations(self):
+        return self._count_model(Relation)
+
+    def list_relations(self):
+        return self.session.query(Relation).all()
+
     def summarize(self):
         """Returns a summary dictionary over the content of the database
 
@@ -69,7 +86,8 @@ class Manager(AbstractManager):
         return dict(
             chemicals=self.count_chemicals(),
             xrefs=self.count_xrefs(),
-            synonyms=self.count_synonyms()
+            relations=self.count_relations(),
+            synonyms=self.count_synonyms(),
         )
 
     def get_or_create_chemical(self, chebi_id, **kwargs):
@@ -147,14 +165,14 @@ class Manager(AbstractManager):
 
         parents = []
         it = tqdm(df.iterrows(), desc='Compounds', total=len(df.index))
-        for _, (pk, status, chebi_id, source, parent_chebi_id, name, definition, _, _, _) in it:
+        for _, (pk, status, chebi_id, source, parent_pk, name, definition, _, _, _) in it:
             chebi_id = chebi_id.split(':')[1]
 
-            chemical = self.chebi_id_to_chemical[chebi_id] = Chemical(
+            chemical = self.id_chemical[pk] = self.chebi_id_to_chemical[chebi_id] = Chemical(
                 id=pk,  # ChEBI already sends out their data in relational format
                 status=status,
                 chebi_id=chebi_id,
-                parent_chebi_id=parent_chebi_id or None,
+                parent_id=parent_pk or None,
                 name=name,
                 source=source,
                 definition=definition,
@@ -162,12 +180,12 @@ class Manager(AbstractManager):
             )
             self.session.add(chemical)
 
-            if parent_chebi_id:
-                parents.append((chebi_id, parent_chebi_id))
+            if parent_pk:
+                parents.append((pk, parent_pk))
 
-        for child_id, parent_chebi_id in tqdm(parents, desc='Secondaries'):
+        for child_id, parent_pk in tqdm(parents, desc='Secondaries'):
             child = self.chebi_id_to_chemical.get(child_id)
-            parent = self.chebi_id_to_chemical.get(parent_chebi_id)
+            parent = self.chebi_id_to_chemical.get(parent_pk)
 
             if child is not None and parent is not None:
                 child.parent = parent
@@ -240,7 +258,14 @@ class Manager(AbstractManager):
         """
         df = get_relations_df(url=url)
 
-        for _, (pk, relation_type, source_id, target_id, status)  in tqdm(df.iterrows(), total=len(df.index)):
+        for _, (pk, relation_type, source_id, target_id, status) in tqdm(df.iterrows(), total=len(df.index)):
+
+            if source_id not in self.id_chemical:
+                continue
+
+            if target_id not in self.id_chemical:
+                continue
+
             relation = Relation(
                 id=pk,
                 type=relation_type,
@@ -308,3 +333,84 @@ class Manager(AbstractManager):
             while parent is not None:
                 graph.add_is_a(chemical.as_bel(), parent.as_bel())
                 chemical, parent = parent, parent.parent
+
+    def _list_equivalencies(self):
+        return self.session.query(Chemical).filter(Chemical.parent_id.isnot(None))
+
+    def _get_default_ns(self):
+        return self.session.query(Namespace).filter(_namespace_filter).one_or_none()
+
+    def _iterate_relations(self):
+        # return self.session.query(Relation).limit(100)
+        return tqdm(self.list_relations(), total=self.count_relations(), desc='Relation')
+
+    def to_bel(self):
+        """Exports BEL
+
+        :rtype: pybel.BELGraph
+        """
+        if self._get_default_ns() is None:
+            self.upload_bel_ids()  # Make sure the super id namespace is available
+
+        graph = BELGraph(
+            name=_chebi_bel_name,
+            version=_chebi_bel_version,
+            description=_chebi_description,
+        )
+
+        graph.namespace_url[_chebi_keyword] = _chebi_keyword
+
+        for relation in self._iterate_relations():
+            relation.add_to_graph(graph)
+
+        return graph
+
+    def _make_ns(self):
+        ns = Namespace(
+            name=_chebi_keyword,
+            keyword=_chebi_keyword,
+            url=_chebi_keyword,
+            version=str(time.asctime())
+        )
+        self.session.add(ns)
+
+        for chebi_id, in tqdm(self.session.query(Chemical.chebi_id), total=self.count_chemicals()):
+            if chebi_id is None:
+                continue
+
+            entry = NamespaceEntry(encoding='A', name=chebi_id, namespace=ns)
+            self.session.add(entry)
+
+        log.info('committing chemicals')
+        self.session.commit()
+
+        return ns
+
+    def _update_ns(self, ns):
+        old = {term.name for term in ns.entries}
+        new_count = 0
+
+        for chebi_id, in tqdm(self.session.query(Chemical.chebi_id), total=self.count_chemicals()):
+            if chebi_id is None or chebi_id in old:
+                continue
+
+            new_count += 1
+            entry = NamespaceEntry(encoding='A', name=chebi_id, namespace=ns)
+            self.session.add(entry)
+
+        log.info('got %d new entries', new_count)
+        self.session.commit()
+
+    def upload_bel_ids(self):
+        """
+
+        :rtype: pybel.manager.models.Namespace
+        """
+        ns = self._get_default_ns()
+
+        if ns is None:
+            ns = self._make_ns()
+        else:
+            self._update_ns(ns)
+
+        return ns

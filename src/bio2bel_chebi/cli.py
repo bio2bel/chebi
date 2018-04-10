@@ -33,5 +33,12 @@ def deploy(ols_base=None, no_hash_check=False):
     click.echo('Deployed to {}'.format(success) if success else 'Duplicate not deployed')
 
 
+@main.command()
+@click.pass_obj
+def upload_bel_ids(manager):
+    n = manager.upload_bel_ids()
+    click.echo('uploaded {} {}'.format(n.id, n))
+
+
 if __name__ == '__main__':
     main()

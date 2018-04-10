@@ -2,10 +2,13 @@
 
 import unittest
 
+from tests.constants import PopulatedDatabaseMixin
 
-class TestParse(unittest.TestCase):
-    def test_dummy(self):
-        self.assertTrue(True)
+
+class TestParse(PopulatedDatabaseMixin):
+
+    def test_compound_count(self):
+        self.assertEqual(9, self.manager.count_chemicals())
 
 
 if __name__ == '__main__':
