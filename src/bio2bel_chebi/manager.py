@@ -206,7 +206,7 @@ class Manager(AbstractManager):
             chebi_id = str(int(chebi_id))
             chemical = self.get_or_create_chemical(chebi_id=chebi_id)
 
-            for _, (pk, chebi_id, type_, source, name, adapted, language) in sub_df.iterrows():
+            for _, (pk, _, type_, source, name, adapted, language) in sub_df.iterrows():
 
                 if isinstance(name, float) or not name:
                     continue
@@ -238,7 +238,7 @@ class Manager(AbstractManager):
         for chebi_id, sub_df in tqdm(grouped_df, desc='Xrefs', total=len(grouped_df)):
             chebi_id = str(int(chebi_id))
             chemical = self.get_or_create_chemical(chebi_id=chebi_id)
-            for _, (pk, chebi_id, source, type_, accession) in sub_df.iterrows():
+            for _, (pk, _, source, type_, accession) in sub_df.iterrows():
                 acc = Accession(
                     id=pk,
                     chemical=chemical,
