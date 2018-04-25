@@ -9,7 +9,7 @@ from sqlalchemy import and_
 from tqdm import tqdm
 
 import pybel
-from bio2bel.abstractmanager import AbstractManager
+from bio2bel import AbstractManager
 from pybel import BELGraph
 from pybel.constants import IDENTIFIER, NAME, NAMESPACE
 from pybel.manager.models import Namespace, NamespaceEntry

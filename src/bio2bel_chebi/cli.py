@@ -6,12 +6,11 @@ import sys
 
 import click
 
-from bio2bel.cli_utils import build_cli
 from pybel_tools.ols_utils import OlsNamespaceOntology
 from .manager import Manager
 from .run import MODULE_DOMAIN, MODULE_ENCODING, MODULE_NAME
 
-main = build_cli(Manager)
+main = Manager.get_cli()
 
 
 @main.command()
@@ -33,11 +32,7 @@ def deploy(ols_base=None, no_hash_check=False):
     click.echo('Deployed to {}'.format(success) if success else 'Duplicate not deployed')
 
 
-@main.command()
-@click.pass_obj
-def upload_bel_ids(manager):
-    n = manager.upload_bel_ids()
-    click.echo('uploaded {} {}'.format(n.id, n))
+
 
 
 if __name__ == '__main__':
