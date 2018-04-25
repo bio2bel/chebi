@@ -10,7 +10,6 @@ from tqdm import tqdm
 
 import pybel
 from bio2bel.abstractmanager import AbstractManager
-from bio2bel.utils import bio2bel_populater
 from pybel import BELGraph
 from pybel.constants import IDENTIFIER, NAME, NAMESPACE
 from pybel.manager.models import Namespace, NamespaceEntry
@@ -48,8 +47,15 @@ class Manager(AbstractManager):
         self.chebi_id_to_inchi = {}
 
     @property
-    def base(self):
+    def _base(self):
         return Base
+
+    def is_populated(self):
+        """Check if the database is populated
+
+        :rtype: bool
+        """
+        return 0 < self.count_chemicals()
 
     def count_chemicals(self):
         """Counts the number of chemicals stored
@@ -73,9 +79,17 @@ class Manager(AbstractManager):
         return self.session.query(Synonym).count()
 
     def count_relations(self):
+        """Count the relations in the database.
+
+        :rtype: int
+        """
         return self._count_model(Relation)
 
     def list_relations(self):
+        """List the relations in the database.
+
+        :rtype: list[Relation]
+        """
         return self.session.query(Relation).all()
 
     def summarize(self):
@@ -278,7 +292,6 @@ class Manager(AbstractManager):
         log.info('committing Relations')
         self.session.commit()
 
-    @bio2bel_populater(MODULE_NAME)
     def populate(self):
         """Populates all tables"""
         t = time.time()
@@ -337,7 +350,7 @@ class Manager(AbstractManager):
     def _list_equivalencies(self):
         return self.session.query(Chemical).filter(Chemical.parent_id.isnot(None))
 
-    def _get_default_ns(self):
+    def _get_default_namespace(self):
         return self.session.query(Namespace).filter(_namespace_filter).one_or_none()
 
     def _iterate_relations(self):
@@ -349,7 +362,7 @@ class Manager(AbstractManager):
 
         :rtype: pybel.BELGraph
         """
-        if self._get_default_ns() is None:
+        if self._get_default_namespace() is None:
             self.upload_bel_ids()  # Make sure the super id namespace is available
 
         graph = BELGraph(
@@ -406,7 +419,7 @@ class Manager(AbstractManager):
 
         :rtype: pybel.manager.models.Namespace
         """
-        ns = self._get_default_ns()
+        ns = self._get_default_namespace()
 
         if ns is None:
             ns = self._make_ns()

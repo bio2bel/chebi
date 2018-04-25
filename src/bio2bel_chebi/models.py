@@ -14,6 +14,7 @@ __all__ = [
     'Chemical',
     'Synonym',
     'Accession',
+    'Relation',
 ]
 
 Base = declarative_base()
