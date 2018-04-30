@@ -362,16 +362,14 @@ class Manager(AbstractManager):
 
         :rtype: pybel.BELGraph
         """
-        if self._get_default_namespace() is None:
-            self.upload_bel_ids()  # Make sure the super id namespace is available
-
         graph = BELGraph(
             name=_chebi_bel_name,
             version=_chebi_bel_version,
             description=_chebi_description,
         )
 
-        graph.namespace_url[_chebi_keyword] = _chebi_keyword
+        namespace = self.upload_bel_ids()  # Make sure the super id namespace is available
+        graph.namespace_url[namespace.keyword] = namespace.url
 
         for relation in self._iterate_relations():
             relation.add_to_graph(graph)
