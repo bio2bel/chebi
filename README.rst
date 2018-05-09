@@ -20,7 +20,7 @@ or from the latest code on `GitHub <https://github.com/bio2bel/chebi>`_ with:
 
 Setup
 -----
-chebi can be downloaded and populated from either the Python REPL or the automatically installed command line
+ChEBI can be downloaded and populated from either the Python REPL or the automatically installed command line
 utility.
 
 Python REPL
