@@ -102,3 +102,5 @@ ENV/
 
 .idea
 .idea/*
+
+src/bio2bel_chebi/scratch.py
