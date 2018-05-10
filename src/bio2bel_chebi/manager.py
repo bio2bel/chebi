@@ -5,14 +5,12 @@ import logging
 
 import pandas as pd
 import time
-from sqlalchemy import and_
 from tqdm import tqdm
 
-import pybel
-from bio2bel import AbstractManager
+from bio2bel.namespacemanagermixin import NamespaceManagerMixin
 from pybel import BELGraph
 from pybel.constants import IDENTIFIER, NAME, NAMESPACE
-from pybel.manager.models import Namespace, NamespaceEntry
+from pybel.manager.models import NamespaceEntry
 from .constants import MODULE_NAME
 from .models import Accession, Base, Chemical, Relation, Synonym
 from .parser.accession import get_accession_df
@@ -25,22 +23,20 @@ __all__ = ['Manager']
 
 log = logging.getLogger(__name__)
 
-_chebi_keyword = '_{}'.format(MODULE_NAME.upper())
 _chebi_bel_name = 'ChEBI Ontology'
 _chebi_bel_version = datetime.datetime.utcnow().strftime('%Y%m%d%H%M')
 _chebi_description = 'Relations between chemicals of biological interest'
 
-_namespace_filter = and_(Namespace.keyword == _chebi_keyword, Namespace.url == _chebi_keyword)
 
-
-class Manager(AbstractManager):
+class Manager(NamespaceManagerMixin):
     """Bio2BEL ChEBI Manager"""
 
     module_name = MODULE_NAME
+    namespace_model = Chemical
     flask_admin_models = [Chemical, Relation, Synonym, Accession]
 
-    def __init__(self, connection=None):
-        super().__init__(connection=connection)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self.id_chemical = {}
         self.chebi_id_to_chemical = {}
@@ -299,8 +295,8 @@ class Manager(AbstractManager):
         self._load_inchis()
         self._populate_compounds()
         self._populate_relations()
-        # self._populate_names()
-        # self._populate_accession()
+        self._populate_names()
+        self._populate_accession()
 
         log.info('populated in %.2f seconds', time.time() - t)
 
@@ -350,9 +346,6 @@ class Manager(AbstractManager):
     def _list_equivalencies(self):
         return self.session.query(Chemical).filter(Chemical.parent_id.isnot(None))
 
-    def _get_default_namespace(self):
-        return self.session.query(Namespace).filter(_namespace_filter).one_or_none()
-
     def _iterate_relations(self):
         # return self.session.query(Relation).limit(100)
         return tqdm(self.list_relations(), total=self.count_relations(), desc='Relation')
@@ -368,7 +361,7 @@ class Manager(AbstractManager):
             description=_chebi_description,
         )
 
-        namespace = self.upload_bel_ids()  # Make sure the super id namespace is available
+        namespace = self.upload_bel_namespace()  # Make sure the super id namespace is available
         graph.namespace_url[namespace.keyword] = namespace.url
 
         for relation in self._iterate_relations():
@@ -376,52 +369,25 @@ class Manager(AbstractManager):
 
         return graph
 
-    def _make_ns(self):
-        ns = Namespace(
-            name=_chebi_keyword,
-            keyword=_chebi_keyword,
-            url=_chebi_keyword,
-            version=str(time.asctime())
-        )
-        self.session.add(ns)
+    def _create_namespace_entry_from_model(self, chemical, namespace=None):
+        """Create a namespace entry from a chemical model
 
-        for chebi_id, in tqdm(self.session.query(Chemical.chebi_id), total=self.count_chemicals()):
-            if chebi_id is None:
-                continue
-
-            entry = NamespaceEntry(encoding='A', name=chebi_id, namespace=ns)
-            self.session.add(entry)
-
-        log.info('committing chemicals')
-        self.session.commit()
-
-        return ns
-
-    def _update_ns(self, ns):
-        old = {term.name for term in ns.entries}
-        new_count = 0
-
-        for chebi_id, in tqdm(self.session.query(Chemical.chebi_id), total=self.count_chemicals()):
-            if chebi_id is None or chebi_id in old:
-                continue
-
-            new_count += 1
-            entry = NamespaceEntry(encoding='A', name=chebi_id, namespace=ns)
-            self.session.add(entry)
-
-        log.info('got %d new entries', new_count)
-        self.session.commit()
-
-    def upload_bel_ids(self):
+        :param Chemical chemical:
+        :param Namespace namespace:
+        :rtype: Optional[NamespaceEntry]
         """
+        if chemical.name:
+            return NamespaceEntry(
+                encoding='A',
+                name=chemical.name,
+                identifier=chemical.chebi_id,
+                namespace=namespace
+            )
 
-        :rtype: pybel.manager.models.Namespace
+    def _get_identifier(self, chemical):
+        """Gets the identifier from the chemical model
+
+        :type chemical: Chemical
+        :rtype: str
         """
-        ns = self._get_default_namespace()
-
-        if ns is None:
-            ns = self._make_ns()
-        else:
-            self._update_ns(ns)
-
-        return ns
+        return chemical.chebi_id
