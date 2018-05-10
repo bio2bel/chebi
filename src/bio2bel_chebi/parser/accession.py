@@ -25,6 +25,7 @@ def download_accessions(force_download=False):
 
     return ACCESSION_DATA_PATH
 
+
 def get_accession_df(url=None, cache=True, force_download=False):
     """Gets the ChEBI accession flat file.
 

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from pybel.constants import NAMESPACE_DOMAIN_CHEMICAL
 from pybel_tools.ols_utils import OlsNamespaceOntology
+
+from pybel.constants import NAMESPACE_DOMAIN_CHEMICAL
 
 __all__ = [
     'MODULE_NAME',

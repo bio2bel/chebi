@@ -12,7 +12,6 @@ from ..constants import RELATIONS_DATA_PATH, RELATIONS_URL
 log = logging.getLogger(__name__)
 
 
-
 def download_relations(force_download=False):
     """Downloads the compound relations
 

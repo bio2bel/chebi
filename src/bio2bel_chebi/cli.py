@@ -5,8 +5,8 @@
 import sys
 
 import click
-
 from pybel_tools.ols_utils import OlsNamespaceOntology
+
 from .manager import Manager
 from .run import MODULE_DOMAIN, MODULE_ENCODING, MODULE_NAME
 
@@ -30,9 +30,6 @@ def deploy(ols_base=None, no_hash_check=False):
     ontology = OlsNamespaceOntology(MODULE_NAME, MODULE_DOMAIN, encoding=MODULE_ENCODING, ols_base=ols_base)
     success = ontology.deploy_namespace(hash_check=(not no_hash_check))
     click.echo('Deployed to {}'.format(success) if success else 'Duplicate not deployed')
-
-
-
 
 
 if __name__ == '__main__':
