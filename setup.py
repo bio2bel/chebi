@@ -15,7 +15,7 @@ INSTALL_REQUIRES = [
     'pandas',
     'sqlalchemy',
     'tqdm',
-    'bio2bel>=0.0.9',
+    'bio2bel>=0.0.11',
     'pybel[deployment]>=0.11.1',
     'pybel_tools>=0.5.1',
 ]
