@@ -2,12 +2,12 @@
 
 import datetime
 import logging
+import time
 
 import pandas as pd
-import time
 from tqdm import tqdm
 
-from bio2bel.namespacemanagermixin import NamespaceManagerMixin
+from bio2bel.namespace_manager import NamespaceManagerMixin
 from pybel import BELGraph
 from pybel.constants import IDENTIFIER, NAME, NAMESPACE
 from pybel.manager.models import NamespaceEntry
