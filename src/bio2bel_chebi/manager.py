@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+"""Manager for CheBI."""
+
 import datetime
 import logging
 import time
@@ -29,11 +31,16 @@ _chebi_description = 'Relations between chemicals of biological interest'
 
 
 class Manager(NamespaceManagerMixin):
-    """Bio2BEL ChEBI Manager"""
+    """Bio2BEL ChEBI Manager."""
 
     module_name = MODULE_NAME
     namespace_model = Chemical
     flask_admin_models = [Chemical, Relation, Synonym, Accession]
+
+    miriam = 'MIR:00000002'
+    pattern = '^CHEBI:\d+$'
+    namespace = 'chebi'
+    uri = 'http://identifiers.org/chebi/'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -47,28 +54,28 @@ class Manager(NamespaceManagerMixin):
         return Base
 
     def is_populated(self):
-        """Check if the database is populated
+        """Check if the database is already populated.
 
         :rtype: bool
         """
         return 0 < self.count_chemicals()
 
     def count_chemicals(self):
-        """Counts the number of chemicals stored
+        """Count the number of chemicals stored.
 
         :rtype: int
         """
         return self.session.query(Chemical).count()
 
     def count_xrefs(self):
-        """Counts the number of cross-references stored
+        """Counts the number of cross-references stored.
 
         :rtype: int
         """
         return self.session.query(Accession).count()
 
     def count_synonyms(self):
-        """Counts the number of synonyms stored
+        """Count the number of synonyms stored.
 
         :rtype: int
         """
@@ -89,7 +96,7 @@ class Manager(NamespaceManagerMixin):
         return self.session.query(Relation).all()
 
     def summarize(self):
-        """Returns a summary dictionary over the content of the database
+        """Return a summary dictionary over the content of the database.
 
         :rtype: dict[str,int]
         """
@@ -101,7 +108,7 @@ class Manager(NamespaceManagerMixin):
         )
 
     def get_or_create_chemical(self, chebi_id, **kwargs):
-        """Gets a chemical from the database by ChEBI
+        """Get a chemical from the database by ChEBI.
 
         :param str chebi_id: ChEBI database identifier
         :rtype: Chemical
@@ -120,7 +127,7 @@ class Manager(NamespaceManagerMixin):
         return chemical
 
     def get_chemical_by_chebi_id(self, chebi_id):
-        """Get a chemical from the database
+        """Get a chemical from the database.
 
         :param str chebi_id: ChEBI database identifier
         :rtype: Optional[Chemical]
@@ -131,7 +138,7 @@ class Manager(NamespaceManagerMixin):
         return chemical
 
     def get_chemical_by_chebi_name(self, name):
-        """Get a chemical from the database
+        """Get a chemical from the database.
 
         :param str name: ChEBI name
         :rtype: Optional[Chemical]
@@ -147,7 +154,7 @@ class Manager(NamespaceManagerMixin):
         return dict(self.session.query(Chemical.chebi_id, Chemical.name).all())
 
     def build_chebi_name_id_mapping(self):
-        """Builds a mapping from ChEBI name to ChEBI identifier
+        """Build a mapping from ChEBI name to ChEBI identifier.
 
         :rtype: dict[str,str]
         """
