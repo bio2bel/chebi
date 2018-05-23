@@ -37,6 +37,7 @@ class Manager(NamespaceManagerMixin):
     namespace_model = Chemical
     flask_admin_models = [Chemical, Relation, Synonym, Accession]
 
+    label = 'ChEBI'
     miriam = 'MIR:00000002'
     pattern = '^CHEBI:\d+$'
     namespace = 'chebi'
