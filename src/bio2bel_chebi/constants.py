@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+"""Constants for Bio2BEL ChEBI."""
+
 import os
 
 from bio2bel.utils import get_data_dir

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""ChEBI database model"""
+"""SQLAlchemy models for Bio2BEL ChEBI."""
 
 from sqlalchemy import Column, Date, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
