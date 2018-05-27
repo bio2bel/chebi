@@ -4,9 +4,9 @@
 
 import datetime
 import logging
-import time
 
 import pandas as pd
+import time
 from tqdm import tqdm
 
 from bio2bel.namespace_manager import NamespaceManagerMixin
@@ -46,6 +46,7 @@ class Manager(NamespaceManagerMixin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # a dictionary from CHEBI identifier (string CHEBI:\d+) to the model
         self.id_chemical = {}
         self.chebi_id_to_chemical = {}
         self.chebi_id_to_inchi = {}
@@ -81,6 +82,13 @@ class Manager(NamespaceManagerMixin):
         :rtype: int
         """
         return self.session.query(Synonym).count()
+
+    def count_inchis(self):
+        """Count the number of inchis stored.
+
+        :rtype: int
+        """
+        return self.session.query(Chemical).filter(Chemical.inchi.isnot(None)).count()
 
     def count_relations(self):
         """Count the relations in the database.
@@ -278,17 +286,21 @@ class Manager(NamespaceManagerMixin):
 
         for _, (pk, relation_type, source_id, target_id, status) in tqdm(df.iterrows(), total=len(df.index)):
 
-            if source_id not in self.id_chemical:
+            source = self.id_chemical.get(f'CHEBI:{source_id}')
+
+            if source is None:
                 continue
 
-            if target_id not in self.id_chemical:
+            target = self.id_chemical.get(f'CHEBI:{target_id}')
+
+            if target is None:
                 continue
 
             relation = Relation(
                 id=pk,
                 type=relation_type,
-                source_id=source_id,
-                target_id=target_id,
+                source=source,
+                target=target,
                 status=status,
             )
             self.session.add(relation)
@@ -296,15 +308,22 @@ class Manager(NamespaceManagerMixin):
         log.info('committing Relations')
         self.session.commit()
 
-    def populate(self):
-        """Populates all tables"""
+    def populate(self, inchis_url=None, compounds_url=None, relations_url=None, names_url=None, accessions_url=None):
+        """Populate all tables.
+
+        :param Optional[str] inchis_url:
+        :param Optional[str] compounds_url:
+        :param Optional[str] relations_url:
+        :param Optional[str] names_url:
+        :param Optional[str] accessions_url:
+        """
         t = time.time()
 
-        self._load_inchis()
-        self._populate_compounds()
-        self._populate_relations()
-        self._populate_names()
-        self._populate_accession()
+        self._load_inchis(url=inchis_url)
+        self._populate_compounds(url=compounds_url)
+        # self._populate_relations(url=relations_url)
+        # self._populate_names(url=names_url)
+        # self._populate_accession(url=accessions_url)
 
         log.info('populated in %.2f seconds', time.time() - t)
 

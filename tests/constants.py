@@ -17,10 +17,23 @@ relations = os.path.join(resources_directory_path, 'relation.tsv')
 
 TemporaryCacheClsMixin = make_temporary_cache_class_mixin(Manager)
 
+target_ids = {
+    3558,
+    38545,
+    32020,  # pitavastatin
+    38561,  # fluvastatin
+    87635,  # statin (synthetic)
+    87631,  # statin
+    35821,  # anticholesteremic drug
+}
+
 
 class PopulatedDatabaseMixin(TemporaryCacheClsMixin):
     @classmethod
     def populate(cls):
-        cls.manager._load_inchis(url=inchis)
-        cls.manager._populate_compounds(url=compounds)
-        cls.manager._populate_relations(url=relations)
+        Manager.populate(
+            cls.manager,
+            inchis_url=inchis,
+            compounds_url=compounds,
+            # relations_url=relations,
+        )
