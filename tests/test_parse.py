@@ -9,7 +9,9 @@ from tests.constants import PopulatedDatabaseMixin
 class TestParse(PopulatedDatabaseMixin):
 
     def test_compound_count(self):
-        self.assertEqual(7, self.manager.count_chemicals())
+        self.assertEqual(9, self.manager.count_chemicals())
+        self.assertEqual(7, self.manager.count_parent_chemicals())
+        self.assertEqual(2, self.manager.count_child_chemicals())
 
     def test_get_compound(self):
         model = self.manager.get_chemical_by_chebi_id('38545')

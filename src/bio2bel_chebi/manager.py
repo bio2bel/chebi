@@ -69,6 +69,20 @@ class Manager(NamespaceManagerMixin):
         """
         return self.session.query(Chemical).count()
 
+    def count_parent_chemicals(self):
+        """Count the number of parent chemicals stored.
+
+        :rtype: int
+        """
+        return self.session.query(Chemical).filter(Chemical.parent_id.is_(None)).count()
+
+    def count_child_chemicals(self):
+        """Count the number of child chemicals stored.
+
+        :rtype: int
+        """
+        return self.session.query(Chemical).filter(Chemical.parent_id.isnot(None)).count()
+
     def count_xrefs(self):
         """Counts the number of cross-references stored.
 
