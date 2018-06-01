@@ -45,7 +45,7 @@ from .models import *
 
 __all__ = (manager.__all__ + enrich.__all__ + models.__all__)
 
-__version__ = '0.0.6'
+__version__ = '0.0.7-dev'
 
 __title__ = 'bio2bel_chebi'
 __description__ = "A package for converting ChEBI to BEL"
