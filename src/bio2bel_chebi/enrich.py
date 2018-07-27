@@ -43,4 +43,4 @@ def upload_bel(manager=None, pybel_manager=None):
     log.info('converting bel')
     graph = to_bel(manager=manager)
     log.info('storing')
-    return to_database(graph, connection=pybel_manager)
+    return to_database(graph, manager=pybel_manager)
