@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
-"""Manager for CheBI."""
+"""Manager for Bio2BEL ChEBI."""
 
 import datetime
 import logging
-import time
-
 import pandas as pd
+import time
 from tqdm import tqdm
 
-from bio2bel.namespace_manager import NamespaceManagerMixin
+from bio2bel import AbstractManager
+from bio2bel.manager.flask_manager import FlaskMixin
+from bio2bel.manager.namespace_manager import BELNamespaceManagerMixin
 from pybel import BELGraph
 from pybel.constants import IDENTIFIER, NAME, NAMESPACE
 from pybel.manager.models import NamespaceEntry
@@ -30,18 +31,19 @@ _chebi_bel_version = datetime.datetime.utcnow().strftime('%Y%m%d%H%M')
 _chebi_description = 'Relations between chemicals of biological interest'
 
 
-class Manager(NamespaceManagerMixin):
+class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
     """Bio2BEL ChEBI Manager."""
 
     module_name = MODULE_NAME
-    namespace_model = Chemical
-    flask_admin_models = [Chemical, Relation, Synonym, Accession]
 
-    label = 'ChEBI'
-    miriam = 'MIR:00000002'
-    pattern = '^CHEBI:\d+$'
-    namespace = 'chebi'
-    uri = 'http://identifiers.org/chebi/'
+    namespace_model = Chemical
+    identifiers_recommended = 'ChEBI'
+    identifiers_pattern = '^CHEBI:\d+$'
+    identifiers_miriam = 'MIR:00000002'
+    identifiers_namespace = 'chebi'
+    identifiers_url = 'http://identifiers.org/chebi/'
+
+    flask_admin_models = [Chemical, Relation, Synonym, Accession]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
