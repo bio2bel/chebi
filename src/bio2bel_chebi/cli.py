@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Run this script with :code:`python3 -m bio2bel_chebi`"""
+"""The CLI for Bio2BEL ChEBI."""
 
 from .manager import Manager
 

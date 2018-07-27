@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+"""Enrichment functions for BEL Graphs."""
+
 import logging
 
 from pybel import to_database
