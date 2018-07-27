@@ -20,7 +20,7 @@ project = 'Bio2BEL ChEBI'
 copyright = '2017-2018, Charles Tapley Hoyt'
 author = 'Charles Tapley Hoyt'
 
-release = '0.0.7-dev'
+release = '0.1.0-dev'
 
 parsed_version = re.match(
     '(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)(?:-(?P<release>[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+(?P<build>[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?',

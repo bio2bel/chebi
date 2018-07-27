@@ -46,7 +46,7 @@ from .utils import get_version
 
 __all__ = (manager.__all__ + enrich.__all__ + models.__all__ + ['get_version'])
 
-__version__ = '0.0.7-dev'
+__version__ = '0.1.0-dev'
 
 __title__ = 'bio2bel_chebi'
 __description__ = "A package for converting ChEBI to BEL"
