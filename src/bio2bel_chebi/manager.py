@@ -58,18 +58,12 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
     def _base(self):
         return Base
 
-    def is_populated(self):
-        """Check if the database is already populated.
-
-        :rtype: bool
-        """
+    def is_populated(self) -> bool:
+        """Check if the database is already populated."""
         return 0 < self.count_chemicals()
 
-    def count_chemicals(self):
-        """Count the number of chemicals stored.
-
-        :rtype: int
-        """
+    def count_chemicals(self) -> int:
+        """Count the number of chemicals stored."""
         return self.session.query(Chemical).count()
 
     def count_parent_chemicals(self):

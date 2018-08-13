@@ -104,3 +104,4 @@ ENV/
 .idea/*
 
 src/bio2bel_chebi/scratch.py
+.pytest_cache
