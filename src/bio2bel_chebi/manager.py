@@ -4,17 +4,17 @@
 
 import datetime
 import logging
+import time
 
 import pandas as pd
-import time
-from tqdm import tqdm
-
 from bio2bel import AbstractManager
 from bio2bel.manager.flask_manager import FlaskMixin
 from bio2bel.manager.namespace_manager import BELNamespaceManagerMixin
 from pybel import BELGraph
 from pybel.constants import IDENTIFIER, NAME, NAMESPACE
 from pybel.manager.models import NamespaceEntry
+from tqdm import tqdm
+
 from .constants import MODULE_NAME
 from .models import Accession, Base, Chemical, Relation, Synonym
 from .parser.accession import get_accession_df
@@ -146,11 +146,10 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         self.chebi_id_to_chemical[chebi_id] = chemical
         return chemical
 
-    def get_chemical_by_chebi_id(self, chebi_id):
+    def get_chemical_by_chebi_id(self, chebi_id: str) -> Optional[Chemical]:
         """Get a chemical from the database.
 
-        :param str chebi_id: ChEBI database identifier
-        :rtype: Optional[Chemical]
+        :param chebi_id: ChEBI database identifier
         """
         chemical = self.session.query(Chemical).filter(Chemical.chebi_id == chebi_id).one_or_none()
 
@@ -351,13 +350,13 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         """
         namespace = data.get(NAMESPACE)
 
-        if namespace not in {'CHEBI', 'CHEBIID'}:
+        if namespace.lower() not in {'chebi', 'chebiid'}:
             return
 
         identifier = data.get(IDENTIFIER)
         name = data.get(NAME)
 
-        if namespace == 'CHEBI':
+        if namespace.lower() == 'chebi':
             if identifier is not None:
                 return self.get_chemical_by_chebi_id(identifier)
 
@@ -367,7 +366,7 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
             else:
                 raise ValueError
 
-        elif namespace == 'CHEBIID':
+        elif namespace.lower() == 'chebiid':
             return self.get_chemical_by_chebi_id(name)
 
     def enrich_chemical_hierarchy(self, graph):
