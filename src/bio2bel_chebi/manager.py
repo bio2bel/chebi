@@ -153,8 +153,13 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         :rtype: Optional[Chemical]
         """
         chemical = self.session.query(Chemical).filter(Chemical.chebi_id == chebi_id).one_or_none()
+
+        if not chemical:
+            return None
+
         if chemical.parent:
             return chemical.parent
+
         return chemical
 
     def get_chemical_by_chebi_name(self, name):
