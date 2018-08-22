@@ -5,6 +5,7 @@
 import datetime
 import logging
 import time
+from typing import Optional
 
 import pandas as pd
 from bio2bel import AbstractManager
