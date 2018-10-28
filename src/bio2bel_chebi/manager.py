@@ -13,7 +13,7 @@ from bio2bel.manager.flask_manager import FlaskMixin
 from bio2bel.manager.namespace_manager import BELNamespaceManagerMixin
 from pybel import BELGraph
 from pybel.constants import IDENTIFIER, NAME, NAMESPACE
-from pybel.manager.models import NamespaceEntry
+from pybel.manager.models import Namespace, NamespaceEntry
 from tqdm import tqdm
 
 from .constants import MODULE_NAME
@@ -36,6 +36,7 @@ _chebi_description = 'Relations between chemicals of biological interest'
 class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
     """Bio2BEL ChEBI Manager."""
 
+    _base = Base
     module_name = MODULE_NAME
 
     namespace_model = Chemical
@@ -54,10 +55,6 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         self.id_chemical = {}
         self.chebi_id_to_chemical = {}
         self.chebi_id_to_inchi = {}
-
-    @property
-    def _base(self):
-        return Base
 
     def is_populated(self) -> bool:
         """Check if the database is already populated."""
@@ -393,11 +390,8 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         # return self.session.query(Relation).limit(100)
         return tqdm(self.list_relations(), total=self.count_relations(), desc='Relation')
 
-    def to_bel(self):
-        """Exports BEL
-
-        :rtype: pybel.BELGraph
-        """
+    def to_bel(self) -> BELGraph:
+        """Export BEL."""
         graph = BELGraph(
             name=_chebi_bel_name,
             version=_chebi_bel_version,
@@ -412,25 +406,22 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
 
         return graph
 
-    def _create_namespace_entry_from_model(self, chemical, namespace=None):
-        """Create a namespace entry from a chemical model
-
-        :param Chemical chemical:
-        :param Namespace namespace:
-        :rtype: Optional[NamespaceEntry]
-        """
+    def _create_namespace_entry_from_model(self, chemical: Chemical, namespace: Namespace) -> NamespaceEntry:
+        """Create a namespace entry from a chemical model."""
         if chemical.name:
             return NamespaceEntry(
-                encoding='A',
+                encoding=chemical.bel_encoding,
                 name=chemical.name,
                 identifier=chemical.chebi_id,
                 namespace=namespace
             )
 
-    def _get_identifier(self, chemical):
-        """Gets the identifier from the chemical model
-
-        :type chemical: Chemical
-        :rtype: str
-        """
+    @staticmethod
+    def _get_identifier(chemical: Chemical) -> str:
+        """Get the identifier from the chemical model."""
         return chemical.chebi_id
+
+    @staticmethod
+    def _get_name(chemical: Chemical) -> str:
+        """Get the name of the chemical"""
+        return chemical.safe_name

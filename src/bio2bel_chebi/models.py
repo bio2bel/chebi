@@ -28,8 +28,8 @@ RELATION_TABLE_NAME = '{}_relation'.format(TABLE_PREFIX)
 
 class Chemical(Base):
     """Represents a chemical"""
-    __tablename__ = CHEMICAL_TABLE_NAME
 
+    __tablename__ = CHEMICAL_TABLE_NAME
     id = Column(Integer, primary_key=True)
 
     chebi_id = Column(String(32), nullable=False, unique=True, index=True, doc='The ChEBI identifier for a compound')
@@ -46,8 +46,10 @@ class Chemical(Base):
     created_by = Column(String(255))
     stars = Column(Integer)
 
+    bel_encoding = 'A'
+
     def __repr__(self):
-        return '<Chemical CHEBI:{}>'.format(self.chebi_id)
+        return f'<Chemical chebi_id={self.chebi_id}>'
 
     def __str__(self):
         return self.safe_name or self.chebi_id
@@ -78,7 +80,7 @@ class Chemical(Base):
 
         return rv
 
-    def to_bel(self):
+    def to_bel(self) -> pybel.dsl.Abundance:
         """Makes an abundance PyBEL data dictionary
 
         :rtype: abundance
@@ -86,10 +88,10 @@ class Chemical(Base):
         if self.parent:
             return self.parent.to_bel()
 
-        return abundance(
-            namespace='CHEBI',
+        return pybel.dsl.Abundance(
+            namespace='chebi',
             name=self.name,
-            identifier=self.chebi_id
+            identifier=self.chebi_id,
         )
 
 
