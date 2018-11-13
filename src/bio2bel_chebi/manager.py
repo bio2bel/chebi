@@ -41,7 +41,7 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
 
     namespace_model = Chemical
     identifiers_recommended = 'ChEBI'
-    identifiers_pattern = '^CHEBI:\d+$'
+    identifiers_pattern = r'^CHEBI:\d+$'
     identifiers_miriam = 'MIR:00000002'
     identifiers_namespace = 'chebi'
     identifiers_url = 'http://identifiers.org/chebi/'
@@ -413,7 +413,7 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
                 encoding=chemical.bel_encoding,
                 name=chemical.name,
                 identifier=chemical.chebi_id,
-                namespace=namespace
+                namespace=namespace,
             )
 
     @staticmethod

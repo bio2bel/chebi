@@ -10,6 +10,7 @@ import setuptools
 
 PACKAGES = setuptools.find_packages(where='src')
 META_PATH = os.path.join('src', 'bio2bel_chebi', '__init__.py')
+KEYWORDS = ['Biological Expression Language', 'BEL', 'ChEBI', 'Systems Biology', 'Networks Biology']
 CLASSIFIERS = [
     'Development Status :: 4 - Beta',
     'Environment :: Console',
@@ -17,7 +18,9 @@ CLASSIFIERS = [
     'Intended Audience :: Science/Research',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
+    'Programming Language :: Python :: 3 :: Only',
     'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
     'Topic :: Scientific/Engineering :: Bio-Informatics',
     'License :: OSI Approved :: MIT License',
 ]
@@ -26,11 +29,20 @@ INSTALL_REQUIRES = [
     'pandas',
     'sqlalchemy',
     'tqdm',
-    'bio2bel>=0.1.4',
-    'pybel>=0.11.10',
+    'bio2bel>=0.2.0,<0.3.0',
+    'pybel>=0.12.0,<0.13.0',
 ]
 EXTRAS_REQUIRE = {
-    'web': ['flask', 'flask-admin'],
+    'web': [
+        'flask',
+        'flask-admin',
+    ],
+    'docs': [
+        'sphinx',
+        'sphinx-rtd-theme',
+        'sphinx-click',
+        'sphinx-autodoc-typehints',
+    ],
 }
 ENTRY_POINTS = {
     'bio2bel': [
@@ -84,9 +96,11 @@ if __name__ == '__main__':
         maintainer_email=find_meta('email'),
         license=find_meta('license'),
         classifiers=CLASSIFIERS,
+        keywords=KEYWORDS,
         packages=PACKAGES,
         package_dir={'': 'src'},
         install_requires=INSTALL_REQUIRES,
         extras_require=EXTRAS_REQUIRE,
         entry_points=ENTRY_POINTS,
+        zip_safe=False,
     )
