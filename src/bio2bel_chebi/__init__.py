@@ -38,15 +38,11 @@ Command Line Utility
 
 """
 
-from . import enrich, manager, models
-from .enrich import *
 from .manager import *
 from .models import *
 from .utils import get_version
 
-__all__ = (manager.__all__ + enrich.__all__ + models.__all__ + ['get_version'])
-
-__version__ = '0.1.2-dev'
+__version__ = '0.2.1-dev'
 
 __title__ = 'bio2bel_chebi'
 __description__ = "A package for converting ChEBI to BEL"

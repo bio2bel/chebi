@@ -2,12 +2,14 @@
 
 """SQLAlchemy models for Bio2BEL ChEBI."""
 
+from typing import Mapping
+
 from sqlalchemy import Column, Date, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import backref, relationship
 
 from pybel.constants import NAME, PART_OF
-from pybel.dsl import abundance
+import pybel.dsl
 
 __all__ = [
     'Base',
@@ -27,7 +29,7 @@ RELATION_TABLE_NAME = '{}_relation'.format(TABLE_PREFIX)
 
 
 class Chemical(Base):
-    """Represents a chemical"""
+    """Represents a chemical."""
 
     __tablename__ = CHEMICAL_TABLE_NAME
     id = Column(Integer, primary_key=True)
@@ -55,17 +57,14 @@ class Chemical(Base):
         return self.safe_name or self.chebi_id
 
     @property
-    def safe_name(self):
-        """Either returns this molecule's name, or the parent name
-
-        :rtype: str
-        """
+    def safe_name(self) -> str:
+        """Either returns this molecule's name, or the parent name."""
         return self.name or self.parent.name
 
-    def to_json(self, include_id=False):
-        """
+    def to_json(self, include_id: bool = False) -> Mapping:
+        """Export this chemical as dictionary.
+
         :param bool include_id: Include the database identifier?
-        :rtype: dict
         """
         rv = {
             'chebi_id': self.chebi_id,
@@ -81,10 +80,7 @@ class Chemical(Base):
         return rv
 
     def to_bel(self) -> pybel.dsl.Abundance:
-        """Makes an abundance PyBEL data dictionary
-
-        :rtype: abundance
-        """
+        """Make an abundance PyBEL data dictionary."""
         if self.parent:
             return self.parent.to_bel()
 
@@ -96,9 +92,9 @@ class Chemical(Base):
 
 
 class Relation(Base):
-    """Represents a relation between two chemicals"""
-    __tablename__ = RELATION_TABLE_NAME
+    """Represents a relation between two chemicals."""
 
+    __tablename__ = RELATION_TABLE_NAME
     id = Column(Integer, primary_key=True)
 
     type = Column(String(32), nullable=False, index=True)
@@ -111,7 +107,7 @@ class Relation(Base):
     target = relationship('Chemical', foreign_keys=[target_id], backref=backref('in_edges', lazy='dynamic'))
 
     def add_to_graph(self, graph):
-        """Add this relation to the graph
+        """Add this relation to the graph.
 
         :param pybel.BELGraph graph:
         :rtype: Optional[str]
@@ -134,9 +130,9 @@ Index('relation_target_type_idx', Relation.target_id, Relation.type)
 
 
 class Synonym(Base):
-    """Represents synonyms of a chemical"""
-    __tablename__ = SYNONYM_TABLE_NAME
+    """Represents synonyms of a chemical."""
 
+    __tablename__ = SYNONYM_TABLE_NAME
     id = Column(Integer, primary_key=True)
 
     chemical_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), nullable=False)
@@ -156,9 +152,9 @@ class Synonym(Base):
 
 
 class Accession(Base):
-    """Represents related accession numbers of a chemical"""
-    __tablename__ = ACCESSION_TABLE_NAME
+    """Represents related accession numbers of a chemical."""
 
+    __tablename__ = ACCESSION_TABLE_NAME
     id = Column(Integer, primary_key=True)
 
     chemical_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), nullable=False)

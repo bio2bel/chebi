@@ -23,6 +23,7 @@ ignore = D105,E501
 # flake8-import-order
 application-import-names =
 	bio2bel_chebi
+    bio2bel
 	tests
 import-order-style = pycharm
 

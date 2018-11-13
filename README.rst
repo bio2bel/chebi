@@ -2,7 +2,6 @@ Bio2BEL ChEBI |build| |coverage| |docs| |zenodo|
 ================================================
 Convert the ChEBI ontology and related chemical information to BEL.
 
-
 Installation |pypi_version| |python_versions| |pypi_license|
 ------------------------------------------------------------
 ``bio2bel_chebi`` can be installed easily from `PyPI <https://pypi.python.org/pypi/bio2bel_chebi>`_ with
@@ -20,8 +19,8 @@ or from the latest code on `GitHub <https://github.com/bio2bel/chebi>`_ with:
 
 Setup
 -----
-ChEBI can be downloaded and populated from either the Python REPL or the automatically installed command line
-utility.
+ChEBI can be downloaded and populated from either the Python REPL or the automatically
+installed command line utility.
 
 Python REPL
 ~~~~~~~~~~~
