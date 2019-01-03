@@ -5,17 +5,18 @@
 import datetime
 import logging
 import time
-from typing import Optional
+from typing import List, Mapping, Optional
 
 import pandas as pd
+from tqdm import tqdm
+
 from bio2bel import AbstractManager
 from bio2bel.manager.flask_manager import FlaskMixin
 from bio2bel.manager.namespace_manager import BELNamespaceManagerMixin
 from pybel import BELGraph
 from pybel.constants import IDENTIFIER, NAME, NAMESPACE
+from pybel.dsl import BaseEntity
 from pybel.manager.models import Namespace, NamespaceEntry
-from tqdm import tqdm
-
 from .constants import MODULE_NAME
 from .models import Accession, Base, Chemical, Relation, Synonym
 from .parser.accession import get_accession_df
@@ -64,60 +65,36 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         """Count the number of chemicals stored."""
         return self.session.query(Chemical).count()
 
-    def count_parent_chemicals(self):
-        """Count the number of parent chemicals stored.
-
-        :rtype: int
-        """
+    def count_parent_chemicals(self) -> int:
+        """Count the number of parent chemicals stored."""
         return self.session.query(Chemical).filter(Chemical.parent_id.is_(None)).count()
 
-    def count_child_chemicals(self):
-        """Count the number of child chemicals stored.
-
-        :rtype: int
-        """
+    def count_child_chemicals(self) -> int:
+        """Count the number of child chemicals stored."""
         return self.session.query(Chemical).filter(Chemical.parent_id.isnot(None)).count()
 
-    def count_xrefs(self):
-        """Counts the number of cross-references stored.
-
-        :rtype: int
-        """
+    def count_xrefs(self) -> int:
+        """Count the number of cross-references stored."""
         return self.session.query(Accession).count()
 
-    def count_synonyms(self):
-        """Count the number of synonyms stored.
-
-        :rtype: int
-        """
+    def count_synonyms(self) -> int:
+        """Count the number of synonyms stored."""
         return self.session.query(Synonym).count()
 
-    def count_inchis(self):
-        """Count the number of inchis stored.
-
-        :rtype: int
-        """
+    def count_inchis(self) -> int:
+        """Count the number of inchis stored."""
         return self.session.query(Chemical).filter(Chemical.inchi.isnot(None)).count()
 
-    def count_relations(self):
-        """Count the relations in the database.
-
-        :rtype: int
-        """
+    def count_relations(self) -> int:
+        """Count the relations in the database."""
         return self._count_model(Relation)
 
-    def list_relations(self):
-        """List the relations in the database.
-
-        :rtype: list[Relation]
-        """
+    def list_relations(self) -> List[Relation]:
+        """List the relations in the database."""
         return self.session.query(Relation).all()
 
-    def summarize(self):
-        """Return a summary dictionary over the content of the database.
-
-        :rtype: dict[str,int]
-        """
+    def summarize(self) -> Mapping[str, int]:
+        """Return a summary dictionary over the content of the database."""
         return dict(
             chemicals=self.count_chemicals(),
             xrefs=self.count_xrefs(),
@@ -125,12 +102,8 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
             synonyms=self.count_synonyms(),
         )
 
-    def get_or_create_chemical(self, chebi_id, **kwargs):
-        """Get a chemical from the database by ChEBI.
-
-        :param str chebi_id: ChEBI database identifier
-        :rtype: Chemical
-        """
+    def get_or_create_chemical(self, chebi_id: str, **kwargs) -> Chemical:
+        """Get a chemical from the database by ChEBI."""
         chemical = self.chebi_id_to_chemical.get(chebi_id)
 
         if chemical is not None:
@@ -145,10 +118,7 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         return chemical
 
     def get_chemical_by_chebi_id(self, chebi_id: str) -> Optional[Chemical]:
-        """Get a chemical from the database.
-
-        :param chebi_id: ChEBI database identifier
-        """
+        """Get a chemical from the database."""
         chemical = self.session.query(Chemical).filter(Chemical.chebi_id == chebi_id).one_or_none()
 
         if not chemical:
@@ -159,43 +129,33 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
 
         return chemical
 
-    def get_chemical_by_chebi_name(self, name):
-        """Get a chemical from the database.
-
-        :param str name: ChEBI name
-        :rtype: Optional[Chemical]
-        """
+    def get_chemical_by_chebi_name(self, name: str) -> Optional[Chemical]:
+        """Get a chemical from the database."""
         return self.session.query(Chemical).filter(Chemical.name == name).one_or_none()
 
-    def build_chebi_id_name_mapping(self):
-        """Builds a mapping from ChEBI identifier to ChEBI name
-
-        :rtype: dict[str,str]
-        """
+    def build_chebi_id_name_mapping(self) -> Mapping[str, str]:
+        """Build a mapping from ChEBI identifier to ChEBI name."""
         # FIXME handle secondary id to correct name mappings, since the name isn't stored with the secondary id entry
         return dict(self.session.query(Chemical.chebi_id, Chemical.name).all())
 
-    def build_chebi_name_id_mapping(self):
-        """Build a mapping from ChEBI name to ChEBI identifier.
-
-        :rtype: dict[str,str]
-        """
+    def build_chebi_name_id_mapping(self) -> Mapping[str, str]:
+        """Build a mapping from ChEBI name to ChEBI identifier."""
         return dict(self.session.query(Chemical.name, Chemical.chebi_id).all())
 
-    def _load_inchis(self, url=None):
-        """Downloads and inserts the InChI strings
+    def _load_inchis(self, url: Optional[str] = None) -> None:
+        """Download and insert the InChI strings.
 
-        :param Optional[str] url: The URL (or file path) to download. Defaults to the ChEBI data.
+        :param url: The URL (or file path) to download. Defaults to the ChEBI data.
         """
         df = get_inchis_df(url=url)
 
         for _, (chebi_id, inchi) in tqdm(df.iterrows(), desc='InChIs', total=len(df.index)):
             self.chebi_id_to_inchi[str(chebi_id)] = inchi
 
-    def _populate_compounds(self, url=None):
-        """Downloads and populates the compounds
+    def _populate_compounds(self, url: Optional[str] = None) -> None:
+        """Download and populate the compounds.
 
-        :param Optional[str] url: The URL (or file path) to download. Defaults to the ChEBI data.
+        :param url: The URL (or file path) to download. Defaults to the ChEBI data.
         """
         df = get_compounds_df(url=url)
         df = df.where((pd.notnull(df)), None)
@@ -232,10 +192,10 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         log.info('committing Compounds')
         self.session.commit()
 
-    def _populate_names(self, url=None):
-        """Downloads and inserts the synonyms
+    def _populate_names(self, url: Optional[str] = None) -> None:
+        """Download and insert the synonyms.
 
-        :param Optional[str] url: The URL (or file path) to download. Defaults to the ChEBI data.
+        :param url: The URL (or file path) to download. Defaults to the ChEBI data.
         """
         df = get_names_df(url=url)
 
@@ -263,10 +223,10 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         log.info('committing Synonyms')
         self.session.commit()
 
-    def _populate_accession(self, url=None):
-        """Downloads and inserts the database cross references and accession numbers
+    def _populate_accession(self, url: Optional[str] = None) -> None:
+        """Download and inserts the database cross references and accession numbers
 
-        :param Optional[str] url: The URL (or file path) to download. Defaults to the ChEBI data.
+        :param url: The URL (or file path) to download. Defaults to the ChEBI data.
         """
         df = get_accession_df(url=url)
         df = df.where((pd.notnull(df)), None)
@@ -290,13 +250,8 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         log.info('committing Accessions')
         self.session.commit()
 
-    def _populate_relations(self, url=None):
-        """
-
-        :param Optional[str] url:
-        """
+    def _populate_relations(self, url: Optional[str] = None) -> None:
         df = get_relations_df(url=url)
-
         for _, (pk, relation_type, source_id, target_id, status) in tqdm(df.iterrows(), total=len(df.index)):
 
             source = self.id_chemical.get(f'CHEBI:{source_id}')
@@ -321,15 +276,14 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         log.info('committing Relations')
         self.session.commit()
 
-    def populate(self, inchis_url=None, compounds_url=None, relations_url=None, names_url=None, accessions_url=None):
-        """Populate all tables.
-
-        :param Optional[str] inchis_url:
-        :param Optional[str] compounds_url:
-        :param Optional[str] relations_url:
-        :param Optional[str] names_url:
-        :param Optional[str] accessions_url:
-        """
+    def populate(self,
+                 inchis_url: Optional[str] = None,
+                 compounds_url: Optional[str] = None,
+                 relations_url: Optional[str] = None,
+                 names_url: Optional[str] = None,
+                 accessions_url: Optional[str] = None,
+                 ) -> None:
+        """Populate all tables."""
         t = time.time()
 
         self._load_inchis(url=inchis_url)
@@ -340,19 +294,14 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
 
         log.info('populated in %.2f seconds', time.time() - t)
 
-    def get_chemical_from_data(self, data):
-        """
-
-        :param dict data:
-        :rtype: Optional[Chemical]
-        """
-        namespace = data.get(NAMESPACE)
+    def get_chemical_from_data(self, node: BaseEntity) -> Optional[Chemical]:
+        namespace = node.get(NAMESPACE)
 
         if namespace.lower() not in {'chebi', 'chebiid'}:
             return
 
-        identifier = data.get(IDENTIFIER)
-        name = data.get(NAME)
+        identifier = node.get(IDENTIFIER)
+        name = node.get(NAME)
 
         if namespace.lower() == 'chebi':
             if identifier is not None:
@@ -367,11 +316,8 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         elif namespace.lower() == 'chebiid':
             return self.get_chemical_by_chebi_id(name)
 
-    def enrich_chemical_hierarchy(self, graph):
-        """Enriches the parents for all ChEBI chemicals in the graph
-
-        :type graph: pybel.BELGraph
-        """
+    def enrich_chemical_hierarchy(self, graph: BELGraph) -> None:
+        """Enrich the parents for all ChEBI chemicals in the graph."""
         for _, data in graph.nodes(data=True):
             chemical = self.get_chemical_from_data(data)
 
@@ -383,7 +329,7 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
                 graph.add_is_a(chemical.as_bel(), parent.as_bel())
                 chemical, parent = parent, parent.parent
 
-    def _list_equivalencies(self):
+    def _list_equivalencies(self) -> List[Chemical]:
         return self.session.query(Chemical).filter(Chemical.parent_id.isnot(None))
 
     def _iterate_relations(self):
@@ -423,5 +369,5 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
 
     @staticmethod
     def _get_name(chemical: Chemical) -> str:
-        """Get the name of the chemical"""
+        """Get the name of the chemical."""
         return chemical.safe_name
