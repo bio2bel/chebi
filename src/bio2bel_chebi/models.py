@@ -2,14 +2,14 @@
 
 """SQLAlchemy models for Bio2BEL ChEBI."""
 
-from typing import Mapping
-
 from sqlalchemy import Column, Date, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import backref, relationship
+from typing import Mapping, Optional
 
-from pybel.constants import NAME, PART_OF
 import pybel.dsl
+from pybel import BELGraph
+from pybel.constants import NAME
 
 __all__ = [
     'Base',
@@ -61,10 +61,10 @@ class Chemical(Base):
         """Either returns this molecule's name, or the parent name."""
         return self.name or self.parent.name
 
-    def to_json(self, include_id: bool = False) -> Mapping:
+    def to_json(self, include_id: bool = False) -> Mapping[str, str]:
         """Export this chemical as dictionary.
 
-        :param bool include_id: Include the database identifier?
+        :param include_id: Include the database identifier?
         """
         rv = {
             'chebi_id': self.chebi_id,
@@ -106,7 +106,7 @@ class Relation(Base):
     target_id = Column(Integer, ForeignKey('{}.id'.format(CHEMICAL_TABLE_NAME)), nullable=False)
     target = relationship('Chemical', foreign_keys=[target_id], backref=backref('in_edges', lazy='dynamic'))
 
-    def add_to_graph(self, graph):
+    def add_to_graph(self, graph: BELGraph) -> Optional[str]:
         """Add this relation to the graph.
 
         :param pybel.BELGraph graph:
@@ -119,7 +119,7 @@ class Relation(Base):
             return
 
         if self.type == 'has_part':
-            return graph.add_unqualified_edge(target, source, PART_OF)
+            return graph.add_part_of(target, source)
 
         if self.type == 'is_a':
             return graph.add_is_a(target, source)

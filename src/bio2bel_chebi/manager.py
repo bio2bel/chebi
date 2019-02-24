@@ -5,8 +5,9 @@
 import datetime
 import logging
 import time
-from typing import List, Mapping, Optional
+from typing import Iterable, List, Mapping, Optional, Tuple
 
+from networkx import relabel_nodes
 import pandas as pd
 from tqdm import tqdm
 
@@ -294,27 +295,40 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
 
         log.info('populated in %.2f seconds', time.time() - t)
 
+    def normalize_chemicals(self, graph: BELGraph) -> None:
+        mapping = {
+            node: chemical.to_bel()
+            for node, chemical in list(self.iter_chemicals(graph))
+        }
+        relabel_nodes(graph, mapping, copy=False)
+
+    def iter_chemicals(self, graph: BELGraph) -> Iterable[Tuple[BaseEntity, Chemical]]:
+        """Iterate over pairs of BEL nodes and HGNC genes."""
+        for node in graph:
+            chemical = self.get_chemical_from_data(node)
+            if chemical is not None:
+                yield node, chemical
+
     def get_chemical_from_data(self, node: BaseEntity) -> Optional[Chemical]:
         namespace = node.get(NAMESPACE)
 
-        if namespace.lower() not in {'chebi', 'chebiid'}:
+        if not namespace or namespace.lower() not in {'chebi', 'chebiid'}:
             return
 
         identifier = node.get(IDENTIFIER)
         name = node.get(NAME)
 
-        if namespace.lower() == 'chebi':
+        if identifier is None and name is None:
+            raise ValueError
+
+        if namespace.lower() == 'chebiid':
+            return self.get_chemical_by_chebi_id(name)
+
+        elif namespace.lower() == 'chebi':
             if identifier is not None:
                 return self.get_chemical_by_chebi_id(identifier)
-
-            if name is not None:
+            else:  # elif name is not None:
                 return self.get_chemical_by_chebi_name(name)
-
-            else:
-                raise ValueError
-
-        elif namespace.lower() == 'chebiid':
-            return self.get_chemical_by_chebi_id(name)
 
     def enrich_chemical_hierarchy(self, graph: BELGraph) -> None:
         """Enrich the parents for all ChEBI chemicals in the graph."""
@@ -344,8 +358,7 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
             description=_chebi_description,
         )
 
-        namespace = self.upload_bel_namespace()  # Make sure the super id namespace is available
-        graph.namespace_url[namespace.keyword] = namespace.url
+        self.add_namespace_to_graph(graph)
 
         for relation in self._iterate_relations():
             relation.add_to_graph(graph)
