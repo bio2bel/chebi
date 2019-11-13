@@ -7,17 +7,17 @@ import logging
 import time
 from typing import Iterable, List, Mapping, Optional, Tuple
 
-from networkx import relabel_nodes
 import pandas as pd
+from networkx import relabel_nodes
+from pybel import BELGraph
+from pybel.constants import IDENTIFIER, NAME, NAMESPACE
+from pybel.dsl import BaseEntity
+from pybel.manager.models import Namespace, NamespaceEntry
 from tqdm import tqdm
 
 from bio2bel import AbstractManager
 from bio2bel.manager.flask_manager import FlaskMixin
 from bio2bel.manager.namespace_manager import BELNamespaceManagerMixin
-from pybel import BELGraph
-from pybel.constants import IDENTIFIER, NAME, NAMESPACE
-from pybel.dsl import BaseEntity
-from pybel.manager.models import Namespace, NamespaceEntry
 from .constants import MODULE_NAME
 from .models import Accession, Base, Chemical, Relation, Synonym
 from .parser.accession import get_accession_df
@@ -36,7 +36,7 @@ _chebi_description = 'Relations between chemicals of biological interest'
 
 
 class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
-    """Bio2BEL ChEBI Manager."""
+    """Chemical multi-hierarchy."""
 
     _base = Base
     module_name = MODULE_NAME
@@ -277,13 +277,14 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
         log.info('committing Relations')
         self.session.commit()
 
-    def populate(self,
-                 inchis_url: Optional[str] = None,
-                 compounds_url: Optional[str] = None,
-                 relations_url: Optional[str] = None,
-                 names_url: Optional[str] = None,
-                 accessions_url: Optional[str] = None,
-                 ) -> None:
+    def populate(
+            self,
+            inchis_url: Optional[str] = None,
+            compounds_url: Optional[str] = None,
+            relations_url: Optional[str] = None,
+            names_url: Optional[str] = None,
+            accessions_url: Optional[str] = None,
+    ) -> None:
         """Populate all tables."""
         t = time.time()
 
@@ -295,16 +296,21 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
 
         log.info('populated in %.2f seconds', time.time() - t)
 
-    def normalize_chemicals(self, graph: BELGraph) -> None:
+    def normalize_chemicals(self, graph: BELGraph, use_tqdm: bool = False) -> None:
         mapping = {
             node: chemical.to_bel()
-            for node, chemical in list(self.iter_chemicals(graph))
+            for node, chemical in list(self.iter_chemicals(graph, use_tqdm=use_tqdm))
         }
         relabel_nodes(graph, mapping, copy=False)
 
-    def iter_chemicals(self, graph: BELGraph) -> Iterable[Tuple[BaseEntity, Chemical]]:
-        """Iterate over pairs of BEL nodes and HGNC genes."""
-        for node in graph:
+    def iter_chemicals(self, graph: BELGraph, use_tqdm: bool = False) -> Iterable[Tuple[BaseEntity, Chemical]]:
+        """Iterate over pairs of BEL nodes and ChEBI chemicals."""
+        it = (
+            tqdm(graph, desc='ChEBI chemicals')
+            if use_tqdm else
+            graph
+        )
+        for node in it:
             chemical = self.get_chemical_from_data(node)
             if chemical is not None:
                 yield node, chemical
@@ -329,6 +335,8 @@ class Manager(AbstractManager, FlaskMixin, BELNamespaceManagerMixin):
                 return self.get_chemical_by_chebi_id(identifier)
             else:  # elif name is not None:
                 return self.get_chemical_by_chebi_name(name)
+
+        log.warning('Could not find ChEBI node: %r', node)
 
     def enrich_chemical_hierarchy(self, graph: BELGraph) -> None:
         """Enrich the parents for all ChEBI chemicals in the graph."""
